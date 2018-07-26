@@ -2,13 +2,14 @@ package com.vibes.ethereum.models
 
 import com.vibes.ethereum.helpers.GuidExtension
 
+@SerialVersionUID(123L)
 class Transaction(
-  private var _nonce: Int,
-  private var _gasPrice: Float,
-  private var _gasLimit: Float,
+  private var _nonce: Int = 0,
+  private var _gasPrice: Float = 10,
+  private var _gasLimit: Float= 10,
   private var _receiver: String,
-  private var _value: Float,
-  private var _sender: String) extends GuidExtension {
+  private var _value: Float = 5,
+  private var _sender: String) extends GuidExtension with Serializable {
 
   private val _id: String = generateGUID()
   override def toString: String = {
