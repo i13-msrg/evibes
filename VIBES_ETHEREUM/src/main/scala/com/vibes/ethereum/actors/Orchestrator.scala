@@ -40,6 +40,8 @@ class Orchestrator extends Actor {
   def initializeSimilator(settings: Setting.type ) = {
     val nodes =  createNodes(settings.nodesNum)
     val accounts = createAccounts(settings.accountsNum, nodes)
+
+    //TODO: Terminate once the expected number of transactions are generated
     context.system.scheduler.schedule(5 second, 10 second, new Runnable {
       override def run(): Unit = {
         println("################CYCLE START##############")
@@ -50,17 +52,6 @@ class Orchestrator extends Actor {
           selActor ! NewTx(txList(i))
         }}
       })
-    /*
-    //TODO: Terminate once the expected number of transactions are generated
-      val txList = createTransactions(settings.txBatch, accounts)
-      val i =0
-      for (i<- 1 to txList.length) {
-        val selActor =  context.system.actorSelection(path= "/user/orchestrator/node_"
-          + Random.shuffle(List.range(1, nodes.length)).take(1)(1).toString)
-        selActor ! NewTx(txList(i))
-      }
-
-    */
   }
 
   // Create Nodes
