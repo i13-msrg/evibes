@@ -6,7 +6,6 @@ import com.vibes.ethereum.models.{Account, Client, Transaction}
 import com.vibes.ethereum.Setting
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.ExecutionContext
 import scala.util.Random
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,7 +23,6 @@ class Orchestrator extends Actor {
   var internalState = Vector[String]()
   var nodeRef = new ListBuffer[ActorRef]()
 
-
   import Orchestrator._
   override def preStart(): Unit = {
     log.debug("Starting Orchestrator")
@@ -38,7 +36,7 @@ class Orchestrator extends Actor {
   def state = internalState
 
   def initializeSimilator(settings: Setting.type ) = {
-    val nodes =  createNodes(settings.nodesNum)
+    val nodes =  createNodes(settings)
     val accounts = createAccounts(settings.accountsNum, nodes)
 
     //TODO: Terminate once the expected number of transactions are generated
@@ -47,20 +45,21 @@ class Orchestrator extends Actor {
         println("################CYCLE START##############")
         val txList = createTransactions(settings.txBatch, accounts)
         val i =0
-        for (i<- 0 to txList.length-1) {
+        for (tx <- txList) {
           val selActor = Random.shuffle(nodeRef).take(1)(0)
-          selActor ! NewTx(txList(i))
-        }}
-      })
+          selActor ! NewTx(tx)
+        }
+      }
+    })
   }
 
   // Create Nodes
-  def createNodes(count: Int) : ListBuffer[String] = {
+  def createNodes(setting: Setting.type ) : ListBuffer[String] = {
     var i =0
     var clientList = new ListBuffer[String]()
-    for(i <- 1 to count) {
+    for(i <- 1 to setting.nodesNum) {
       val client = new Client("FULL_NODE", _lat = "10E20W", _lon = "20N5S")
-      val nodeActor = context.system.actorOf(Props(new Node(client)), "node_" + i.toString)
+      val nodeActor = context.system.actorOf(Props(new Node(client, setting)), "node_" + i.toString)
       clientList += client.id
       nodeRef += nodeActor
       nodeActor ! StartNode
