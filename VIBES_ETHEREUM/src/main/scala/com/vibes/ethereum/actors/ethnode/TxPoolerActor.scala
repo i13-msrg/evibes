@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import com.vibes.ethereum.models.Transaction
 import akka.event.Logging
 import com.vibes.ethereum.Setting
+import com.vibes.ethereum.actors.ethnode.EvmPrimary._
 
 
 import scala.collection.mutable
@@ -14,7 +15,7 @@ object TxPoolerActor {
   case class InternalBlockCreated(txList: mutable.ListBuffer[Transaction])
 }
 
-class TxPoolerActor(setting: Setting.type, clientID: String) extends Actor{
+class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: String) extends Actor{
 
   import TxPoolerActor._
 
@@ -78,7 +79,7 @@ class TxPoolerActor(setting: Setting.type, clientID: String) extends Actor{
       }
       println("Send the Transaction LIst to EVMPrimaryActor")
       gasCount = 0
-      //evmPrimary ! InternalBlockCreated(txList)    // send the list to EVMPrimaryActor
+      evmPrimary ! InternalBlockCreated(txList)    // send the list to EVMPrimaryActor
     }
   }
 

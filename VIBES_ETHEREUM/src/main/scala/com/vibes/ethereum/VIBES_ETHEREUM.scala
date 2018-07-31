@@ -5,12 +5,15 @@ import com.vibes.ethereum.actors.Orchestrator
 import com.vibes.ethereum.actors.Orchestrator._
 
 object Setting {
-  val nodesNum: Int = 1
+  val nodesNum: Int = 100
   val txNum: Int = 100
   val accountsNum: Int = 10
   val txBatch: Int = 1
   val blockGasLimit: Float = 50
   val poolSize: Int = 10
+  val minConn: Int = 8
+  val maxConn: Int = 25
+
 }
 
 object VIBES_ETHEREUM {
