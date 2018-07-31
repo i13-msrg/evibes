@@ -10,6 +10,8 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.mutable.HashMap
+
 
 object Orchestrator {
   case class StartSimulation(settings: Setting.type )
@@ -22,7 +24,7 @@ object Orchestrator {
 class Orchestrator extends Actor {
   val log = Logging(context.system, this)
   var internalState = Vector[String]()
-  var nodeRef = new ListBuffer[ActorRef]()
+  var nodeRef = new HashMap[String, ActorRef]
 
   import Orchestrator._
   override def preStart(): Unit = {
@@ -40,7 +42,7 @@ class Orchestrator extends Actor {
     var adjmat = generateNeighbours(settings.nodesNum, settings.minConn, settings.maxConn)
     val nodes =  createNodes(settings, adjmat)
     val accounts = createAccounts(settings.accountsNum, nodes)
-
+    /*
     //TODO: Terminate once the expected number of transactions are generated
     context.system.scheduler.schedule(5 second, 10 second, new Runnable {
       override def run(): Unit = {
@@ -53,6 +55,7 @@ class Orchestrator extends Actor {
         }
       }
     })
+    */
   }
 
   // Create Nodes
@@ -63,7 +66,7 @@ class Orchestrator extends Actor {
       val neighbourName = compileNeighbourList(i, adjMatrix(i))
       val nodeActor = context.system.actorOf(Props(new Node(client, neighbourName, setting)), "node_" + i.toString)
       clientList += client.id
-      nodeRef += nodeActor
+      nodeRef.put(client.id, nodeActor)
       nodeActor ! StartNode
     }
     return clientList
@@ -76,7 +79,9 @@ class Orchestrator extends Actor {
     for(i <- 0 to count) {
       val acc = new Account(_creatorId = Random.shuffle(clientList).take(1)(0))
       accList += acc
-      println("Account Created : " + acc.address)
+      //println("Account Created : " + acc.address)
+      val node = nodeRef.get(acc.creatorId)
+      node.get ! CreateAccount(acc)
     }
     return accList
   }

@@ -79,7 +79,7 @@ class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: Strin
       }
       println("Send the Transaction LIst to EVMPrimaryActor")
       gasCount = 0
-      evmPrimary ! InternalBlockCreated(txList)    // send the list to EVMPrimaryActor
+      evmPrimary ! EvmPrimary.InternalBlockCreated(txList)    // send the list to EVMPrimaryActor
     }
   }
 

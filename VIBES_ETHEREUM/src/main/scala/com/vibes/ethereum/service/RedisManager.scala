@@ -1,11 +1,13 @@
 
 package com.vibes.ethereum.service
 
-import com.vibes.ethereum.models.{Account, Block, Transaction, Client}
+import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
 import com.redis._
 import java.io._
 import java.util.Base64
 import java.nio.charset.StandardCharsets.UTF_8
+
+import scala.util.Try
 
 
 class RedisManager(
@@ -13,54 +15,62 @@ class RedisManager(
 
   private val redis: RedisClient = new RedisClient("localhost", 6379)
 
-  def getClient(id: String) : Client ={
-    deserialise(redis.get("CLIENT-" + id).map(_.toString).getOrElse("")).asInstanceOf[Client]
+  def getClient(id: String) : Option[Client] ={
+    val client = redis.get("CLIENT-" + id)
+    if(client == None) {return None}
+    else {return Try(deserialise(client.toString).asInstanceOf[Client]).toOption}
   }
 
-  def putClient(client:Client) : String ={
+  def putClient(client:Client) : Option[String] ={
       val value = serialise(client)
       val key = "CLIENT-" + clientID
-      redis.set(key, value)
-      key
+      if (redis.set(key, value)) {return Try(key).toOption}
+      else {return None}
   }
 
-  def getTx(txId: String) : Transaction = {
-    deserialise(redis.get(clientID + "-TX-" + txId).toString).asInstanceOf[Transaction]
+  def getTx(txId: String) : Option[Transaction] = {
+    val tx = redis.get(clientID + "-TX-" + txId)
+    if(tx == None) {return None}
+    else {return Try(deserialise(tx.toString).asInstanceOf[Transaction]).toOption}
   }
 
   // Only transactions that are a part of a block are added in the database
-  def putTx(tx: Transaction, blockID: String) : String = {
+  def putTx(tx: Transaction, blockID: String) : Option[String] = {
     val value = serialise(tx)
     val key = clientID + "-TX-" + tx.id + "-" + blockID
-    redis.set(key, value)
-    key
+    if (redis.set(key, value)) {return Try(key).toOption}
+    else {return None}
   }
 
-  def getAccount(accAddr: String) : Account = {
-    deserialise(redis.get(clientID + "-ACC-" + accAddr).toString).asInstanceOf[Account]
+  def getAccount(accAddr: String) : Option[Account] = {
+    val acc = redis.get(clientID + "-ACC-" + accAddr)
+    if(acc == None) {return None}
+    else {return Try(deserialise(acc.toString).asInstanceOf[Account]).toOption}
+
   }
 
-  def putAccount(account: Account) : String = {
+  def putAccount(account: Account) : Option[String] = {
     val key = clientID + "-ACC-" + account.address.toString
-    redis.set(key, serialise(account))
-    key
+    if (redis.set(key, serialise(account))) {return Try(key).toOption}
+    else {return None}
   }
 
-  def putTxEntry(txID: String, accAddr: String, balance: Float): String = {
+  def putTxEntry(txID: String, accAddr: String, balance: Float): Option[String] = {
     val key = clientID + "-TX-ENTRY-" + accAddr
-    redis.lpush(key, txID + ":" + balance.toString)
-    key
+    if (redis.lpush(key, txID + ":" + balance.toString) == None) {return None}
+    else {return Try(key).toOption}
   }
 
-  def getBlock(blockId: String) : Block = {
-    deserialise(redis.get(blockId).toString).asInstanceOf[Block]
+  def getBlock(blockId: String) : Option[Block] = {
+    val block = redis.get(blockId)
+    if (block == None) {return None}
+    else {return Try(deserialise(block.toString).asInstanceOf[Block]).toOption}
   }
 
-  def putBlock(block: Block) : String = {
-    val value = serialise(block)
+  def putBlock(block: Block) : Option[String] = {
     val key = clientID + "-BLOCK-" + block.number.toString
-    redis.set(key, value)
-    key
+    if(redis.set(key, serialise(block)) == None) {return None}
+    else {return Try(key).toOption}
   }
 
   // This part of the code is taken from : https://gist.github.com/laughedelic/634f1a1e5333d58085603fcff317f6b4

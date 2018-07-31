@@ -1,25 +1,32 @@
 package com.vibes.ethereum.models
 
+import com.vibes.ethereum.helpers.GuidExtension
+import scala.collection.mutable
+
+
 @SerialVersionUID(123L)
 class Block(
-  private var _parentHash: String,
-  private var _ommersHash: String,
-  private var _beneficiary: String,
-  private var _stateRoot: String,
-  private var _transactionRoot: String,
-  private var _receiptsRoot: String,
-  private var _difficulty: String,
-  private var _number: Int,
-  private var _gasLimit: Float,
-  private var _gasUsed: Float,
-  private var _transactionList: List[String],
-  private var _timestamp: String) extends Serializable {
+  private var _parentHash: String = "None",
+  private var _ommersHash: String= "None",
+  private var _beneficiary: String= "None",
+  private var _stateRoot: String= "None",
+  private var _transactionRoot: String= "None",
+  private var _receiptsRoot: String= "None",
+  private var _difficulty: String= "None",
+  private var _number: Int = 0,
+  private var _gasLimit: Float = 0,
+  private var _gasUsed: Float = 0,
+  private var _transactionList: mutable.ListBuffer[Transaction],
+  private var _timestamp: String= "None") extends GuidExtension with Serializable {
 
   override def toString: String = {
     f"Block with parent : $parentHash. Number $number. Timestamp: $timestamp"
   }
 
+  private val _id = generateGUID()
+
   //Getter
+  def id = _id
   def parentHash = _parentHash
   def ommersHash = _ommersHash
   def beneficiary = _beneficiary
