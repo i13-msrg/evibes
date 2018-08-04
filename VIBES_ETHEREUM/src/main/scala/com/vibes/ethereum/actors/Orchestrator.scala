@@ -42,7 +42,7 @@ class Orchestrator extends Actor {
     var adjmat = generateNeighbours(settings.nodesNum, settings.minConn, settings.maxConn)
     val nodes =  createNodes(settings, adjmat)
     val accounts = createAccounts(settings.accountsNum, nodes)
-    /*
+
     //TODO: Terminate once the expected number of transactions are generated
     context.system.scheduler.schedule(5 second, 10 second, new Runnable {
       override def run(): Unit = {
@@ -50,12 +50,11 @@ class Orchestrator extends Actor {
         val txList = createTransactions(settings.txBatch, accounts)
         val i =0
         for (tx <- txList) {
-          val selActor = Random.shuffle(nodeRef).take(1)(0)
+          val selActor = nodeRef(Random.shuffle(nodeRef.keySet).take(1).toList(0))
           selActor ! NewTx(tx)
         }
       }
     })
-    */
   }
 
   // Create Nodes

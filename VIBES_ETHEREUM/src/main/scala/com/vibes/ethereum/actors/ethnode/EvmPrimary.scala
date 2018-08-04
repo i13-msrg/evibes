@@ -96,6 +96,50 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
     //TODO: Also count the gas used for the transaction computation
   }
 
+  def calculateDifficulty(blockNumber: Int, parentDifficulty: Float, parentTimestamp: Long, anscBlocks: Int):Double = {
+    val homesteadBlock = 150000
+    val D0 = 131072
+    val epsilon = scala.math.pow(2,((anscBlocks/100000).floor -2)).floor
+    val x = (parentDifficulty/2048)
+    val currTimestamp = System.currentTimeMillis() / 1000
+
+    if (blockNumber == 0 ) {return D0}
+    else if(blockNumber < homesteadBlock) {
+      var sigma1 = -1
+      if (currTimestamp < (parentTimestamp + 13)) {sigma1 =  1}
+      val D1 = parentDifficulty + (x*sigma1) + epsilon
+
+      if(D0 > D1) return D0 else return D1
+    }
+    else {
+      val sigma2_1 = 1 - ((currTimestamp - parentTimestamp)/10).floor
+      val sigma2 = if (sigma2_1 > -99) sigma2_1 else -99
+      val D2 = parentDifficulty + (x*sigma2) + epsilon
+
+      if (D0 > D2) return D0 else return D2
+    }
+  }
+
+  def validateGasLimit(blockGasLimit: Double, parentGasLimit : Double): Boolean = {
+    val Hl_2 = (parentGasLimit/1024).floor
+    if ((blockGasLimit < (parentGasLimit + Hl_2)) &
+      (blockGasLimit > (parentGasLimit - Hl_2)) &
+      (blockGasLimit >= 125000)) return true else false
+  }
+
+  def validateTimestamp(blockTimestamp: Long, parentTimestamp: Long) : Boolean = {
+    if (blockTimestamp > parentTimestamp) return true else false
+  }
+
+  def getBlockNumber(parentNumber: Long) : Long = {parentNumber + 1}
+
+
+  //https://github.com/ethereum/wiki/wiki/Design-Rationale#gas-and-fees
+  //TODO: There will be some nodes increasing the limit while others decreasing it
+  // Try to mimic this scenario.
+  def setGasLimit(parentGasLimit: Long): Long = {return parentGasLimit + (parentGasLimit/1024)}
+
+
   override def unhandled(message: Any): Unit = {
     // This message type is not handled by the TxPoolerActor
     // Write the msg details in the log

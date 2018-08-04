@@ -31,24 +31,12 @@ class Node(client: Client, neighbourName:ListBuffer[String], setting: Setting.ty
 
   import Node._
   override def receive: Receive = {
-    //case StartNode() => nodeStart()
     case NewTx(tx) => {txPoolerActor ! AddTxToPool(tx)}
     case NewBlock(block: Block) => newBlock(block)
     case CreateAccount(account: Account) => createAccount(account)
     case _ => unhandled(message = AnyRef)
   }
 
-/*
-  def nodeStart() = {
-    println("Client with id:" + client.id + " creation msg recvd successfully")
-    val redis = new RedisManager(client.id)
-    val key = redis.putClient(client)
-    println("Client saved as : " + key)
-    val clnt = redis.getClient(client.id)
-    println("Client retrieved as : " + clnt.id)
-  }
-
-*/
 
   def createAccount(account: Account) = {
     redis.putAccount(account)
