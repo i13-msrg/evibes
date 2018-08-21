@@ -12,12 +12,12 @@ class Block(
   private var _stateRoot: String= "None",
   private var _transactionRoot: String= "None",
   private var _receiptsRoot: String= "None",
-  private var _difficulty: String= "None",
-  private var _number: Int = 0,
+  private var _difficulty: Double = 0,
+  private var _number: Long = 0,
   private var _gasLimit: Float = 0,
   private var _gasUsed: Float = 0,
   private var _transactionList: mutable.ListBuffer[Transaction],
-  private var _timestamp: String= "None") extends GuidExtension with Serializable {
+  private var _timestamp: Long= 0) extends GuidExtension with Serializable {
 
   override def toString: String = {
     f"Block with parent : $parentHash. Number $number. Timestamp: $timestamp"
@@ -48,10 +48,10 @@ class Block(
   def stateRoot_=(value:String) = _stateRoot= value
   def transactionRoot_=(value:String) = _transactionRoot= value
   def receiptsRoot_=(value:String) = _receiptsRoot= value
-  def difficulty_=(value:String) = _difficulty= value
-  def number_= (value:Int)= _number= value
+  def difficulty_=(value:Double) = _difficulty= value
+  def number_= (value:Long)= _number= value
   def gasLimit_=(value:Float) = _gasLimit= value
   def gasUsed_=(value:Float) = _gasUsed= value
-  def transactionList_=(value: List[String]) = _transactionList
-  def timestamp_=(value:String) = _timestamp= value
+  def transactionList_=(value: mutable.ListBuffer[Transaction]) = _transactionList
+  def timestamp_=(value:Long) = _timestamp= value
 }

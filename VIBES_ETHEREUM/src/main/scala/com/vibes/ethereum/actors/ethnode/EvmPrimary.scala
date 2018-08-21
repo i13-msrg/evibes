@@ -2,13 +2,16 @@ package com.vibes.ethereum.actors.ethnode
 
 import akka.actor.{Actor, ActorRef}
 import akka.event.Logging
-import com.vibes.ethereum.models.{Account, Block, Transaction}
+import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
+import com.vibes.ethereum.actors.ethnode.TxPoolerActor._
 
 import scala.collection.mutable
+import scala.util.Random
 
 
 object EvmPrimary {
   case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction])
+  case class NewExtBlock(block: Block)
 }
 
 import scala.collection.mutable
@@ -19,26 +22,42 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
   val redis: RedisManager = new RedisManager(clientID)
   var accountsAffected = new HashMap[String, Account]
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
+  val miner: Account = redis.getClient(clientID).get.account
+  //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
+  var parent: Block = new Block() // There will be a genesis block here
 
   import EvmPrimary._
   override def receive: Receive = {
-    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => txBlockReady(txList)
+    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => blockCreate(txList)
+    case NewExtBlock(block: Block) => handleNewBlock(block)
     case _ => unhandled(message = AnyRef)
   }
 
   val log = Logging(context.system, this)
 
-  def txBlockReady(txList : mutable.ListBuffer[Transaction]) = {
+  def handleNewBlock(block: Block) = {
+    blockCreate(block.transactionList)
+  }
 
-    //TODO:A probability function that determines if the PoW is right. If False skip block creation
+  def blockCreate(txList : mutable.ListBuffer[Transaction]) = {
+
     for(tx <- txList){
       if(redis.getTx(tx.id) == None) {
-        executeTx(tx)
+        executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
       }
     }
     // Add the items in local context in the DB
     //Add the updated sender and receiver in the database
-    val block = new Block(_transactionList = txList)
+    val block = new Block(txList)
+
+    block.gasLimit = calculateBlockGasLimit(parent.gasLimit)
+    block.beneficiary = miner.address
+    block.gasUsed = getGasUsed()
+    block.number = getBlockNumber(parent.number)
+    block.timestamp = System.currentTimeMillis() / 1000
+    block.difficulty = calculateDifficulty(block.number, parent.difficulty, block.timestamp, parent.timestamp)
+    block.transactionList = txList
+
     for(key <- accountsAffected.keysIterator) {
       redis.putAccount(accountsAffected.get(key).get)
       println("Account added in the Block")
@@ -58,8 +77,10 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
       }
       txListLocalContext.remove(key)
     }
+    //TODO: Update other fields in the block
     redis.putBlock(block)
     println("Block Created Successfully")
+    parent = block
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
   }
 
@@ -75,33 +96,84 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
     else return accLocal
   }
 
-  def executeTx(tx: Transaction): Any ={
-    val sender = getLocalAccount(tx.sender)
-    val receiver = getLocalAccount(tx.sender)
-    if (sender == None | receiver == None) {println("Sender Or receiver are new. Skipping tx"); return}
-    //TODO: Multiple checks should be added here
-    if (sender.asInstanceOf[Account].balance > tx.value)  {
-      // can be executed
-      sender.get.balance = sender.get.balance - tx.value
-      receiver.get.balance = receiver.get.balance + tx.value
-      accountsAffected.put(sender.get.address, sender.get)
-      accountsAffected.put(receiver.get.address, receiver.get)
-      var accAffected = new HashMap[String, Float]
-      accAffected.put(sender.get.address, sender.get.balance)
-      accAffected.put(receiver.get.address, receiver.get.balance)
+  def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float): Any ={
+    val sender = getLocalAccount(tx.sender).get
+    if (!sender.isInstanceOf[Account]) {println("Sender Or receiver are new. Skipping tx"); return}
+    if(isValidTx(sender, tx, blockGasLimit)) {
+      /*
+      * 1. Reduce TgTp from Sender balance
+      * 2. Increment nonce of sender by 1
+      *
+      * 3. g = Tg - g0 (gas remaining after deducting from sender = Tx Gas - intrensic gas)
+      * 4. Call EVM secondary if contract
+      * 5. Call estimate to get estimated gas usage
+      * 6. calculate amount to be refunded
+      *
+      * Provisional state:
+      * 7. refund the amount to sender
+      * 8. Add (txGasLimit-refund gas)*TxPrice to the benificiary account
+      *
+      * Final State:
+      * 9. Delete all acconts that appear in the sucide list // will be impelemted once the contract exec is done
+      * 10. Total gas used in tx = Transaction gas limit - remaining gas (g')
+      * 11. Save Al = logs created by transaction execution // not implemented
+      * 10 and 11 are needed for tx Logs
+      *
+      * */
+
+      sender.balance -= tx.gasLimit*tx.gasPrice
+      sender.nonce += 1
+      val gasRemaining = tx.gasLimit - getGasUsed()
+      //Here call EVM secondary for contracts
+      // Send a request to estimate gas reqd(g') if contracts
+
+      //For transfer transactions gasRemaining is same (g == g')
+      // Ar = 0 in our case... No SSTORE at this moment
+      var gasRefund = gasRemaining
+      val gasRefund_1 = ((tx.gasLimit - gasRemaining)/2).floor
+      if (gasRefund_1 < 0) gasRefund += gasRefund_1 else gasRefund +=0
+      sender.balance += (gasRefund * tx.gasPrice)
+      miner.balance += (tx.gasLimit - gasRefund)*tx.gasPrice
+
+      accountsAffected.put(sender.address, sender)
+      accountsAffected.put(miner.address, miner)
+
+      val accAffected = new HashMap[String, Float]
+      accAffected.put(sender.address, sender.balance)
+      accAffected.put(miner.address, miner.balance)
       txListLocalContext.put(tx.id, accAffected)
       println(f"Transaction $tx executed successfully")
-
     }
-    //TODO: Also count the gas used for the transaction computation
+    else {
+      //Send the transaction to the tx pool for executing it later, when the conditions are met
+      context.sender ! AddTxToPool(tx)
+    }
+
   }
 
-  def calculateDifficulty(blockNumber: Int, parentDifficulty: Float, parentTimestamp: Long, anscBlocks: Int):Double = {
+  def isValidTx(sender: Account, tx: Transaction, blockGasLimit: Float): Boolean = {
+    val g0 = getGasUsed()
+    val v0 = calculateUpfrontCost(tx) //Upfront cost
+
+    if ((sender.nonce != 0) && (tx.nonce == sender.nonce) && (g0 <= tx.gasLimit)
+      && (v0 <= sender.balance) && (tx.gasLimit <= (blockGasLimit - g0))) return true else return false
+  }
+
+
+  def calculateBlockGasLimit(parentBlockLimit: Float): Float =  {
+    // Miners have a right to set the gasLimit of the current block to be within ~0.0975 (1/1024) of the gas
+    // limit of the last block. So the gas limit is a median of miner preferences (Yellow paper)
+    val factor = parentBlockLimit/1024
+    val res = Random.shuffle(List(0,1)).take(1)
+    if(res == 0) return parentBlockLimit + factor else parentBlockLimit - factor
+  }
+
+
+  def calculateDifficulty(blockNumber: Long, parentDifficulty: Double, currTimestamp: Long, parentTimestamp: Long): Double = {
     val homesteadBlock = 150000
     val D0 = 131072
-    val epsilon = scala.math.pow(2,((anscBlocks/100000).floor -2)).floor
+    val epsilon = scala.math.pow(2,((blockNumber/100000).floor -2)).floor
     val x = (parentDifficulty/2048)
-    val currTimestamp = System.currentTimeMillis() / 1000
 
     if (blockNumber == 0 ) {return D0}
     else if(blockNumber < homesteadBlock) {
@@ -132,6 +204,14 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
   }
 
   def getBlockNumber(parentNumber: Long) : Long = {parentNumber + 1}
+
+  //https://medium.com/@blockchain101/estimating-gas-in-ethereum-b89597748c3f
+  def getGasUsed(): Long = {return 21000}
+
+  def calculateUpfrontCost(tx: Transaction): Float = {
+    (tx.gasLimit * tx.gasPrice) + tx.value
+  }
+
 
 
   //https://github.com/ethereum/wiki/wiki/Design-Rationale#gas-and-fees

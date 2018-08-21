@@ -4,10 +4,10 @@ import akka.actor.{Actor, ActorRef, Props}
 import com.vibes.ethereum.models.Transaction
 import akka.event.Logging
 import com.vibes.ethereum.Setting
-import com.vibes.ethereum.actors.ethnode.EvmPrimary._
 
 
 import scala.collection.mutable
+
 
 
 object TxPoolerActor {
@@ -19,7 +19,9 @@ class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: Strin
 
   import TxPoolerActor._
 
-  private val blockGasLimit: Float =  setting.blockGasLimit
+  // Send more transactions than are allowed in blockGasLimit. As there might be some tx that might get rejected
+  // This change is to speed up the execution.
+  private val blockGasLimit: Double =  setting.blockGasLimit + (setting.blockGasLimit * 0.20)
   private val poolSize: Int = setting.poolSize
   private val txPool = mutable.PriorityQueue.empty[Transaction](Ordering.by(txOrder))
   private var gasInPool: Float = 0
@@ -41,7 +43,7 @@ class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: Strin
   def handleTx(tx: Transaction) : Unit = {
     println(f"Received Transaction ID:  $tx.id")
     if (txPool.length !=(poolSize)) {
-      // TODO : Check if the transaction already exists in the txPool. If everything same, dump it else replace
+      for(t <- txPool) {if(tx.equals(t)) return} //Don't add same tx twice
       txPool.enqueue(tx)
       println(f"Added to the pool. Transaction ID: $tx.id")
       var size = txPool.length
@@ -50,7 +52,7 @@ class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: Strin
       gasInPool += tx.gasLimit
       println(f"Gas in Pool : $gasInPool")
       if (isGasLimitReached) {
-        gasLimitReached()
+        processTxGroup()
       }
     } else {
       // If the pool is full drop the transaction
@@ -65,7 +67,7 @@ class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: Strin
     else false
   }
 
-  def gasLimitReached(): Unit = {
+  def processTxGroup(): Boolean = {
     if (isGasLimitReached) {
       var gasCount: Float = 0
       println("GasLimit reached")
@@ -79,8 +81,16 @@ class TxPoolerActor(evmPrimary: ActorRef, setting: Setting.type ,clientID: Strin
       }
       println("Send the Transaction LIst to EVMPrimaryActor")
       gasCount = 0
-      evmPrimary ! EvmPrimary.InternalBlockCreated(txList)    // send the list to EVMPrimaryActor
+      //A probability function that determines if the PoW is right. If False skip block creation
+
+      // TODO: Change this to reflect real ethereaum PoW probability
+      if (scala.util.Random.nextInt(10) == 1) {
+        evmPrimary ! InternalBlockCreated(txList)
+        return true
+      }
+      else {return false}
     }
+    else {return false}
   }
 
   override def unhandled(message: Any): Unit = {

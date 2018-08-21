@@ -30,9 +30,11 @@ class Node(client: Client, neighbourName:ListBuffer[String], setting: Setting.ty
   }
 
   import Node._
+  import ethnode.EvmPrimary._
+
   override def receive: Receive = {
     case NewTx(tx) => {txPoolerActor ! AddTxToPool(tx)}
-    case NewBlock(block: Block) => newBlock(block)
+    case NewBlock(block: Block) => {evmPrimaryActor ! NewExtBlock(block)}
     case CreateAccount(account: Account) => createAccount(account)
     case _ => unhandled(message = AnyRef)
   }
@@ -41,11 +43,6 @@ class Node(client: Client, neighbourName:ListBuffer[String], setting: Setting.ty
   def createAccount(account: Account) = {
     redis.putAccount(account)
     println("Account Created Successfully in Node")
-  }
-
-  def newBlock(block : Block) = {
-    // Check if the block for these transactions already created.
-    // TODO: Verify the working from the reference
   }
 
   override def unhandled(message: Any): Unit = {

@@ -6,7 +6,8 @@ import com.vibes.ethereum.helpers.GuidExtension
 class Client(
     private var _clientType: String,
     private var _lat: String,
-    private var _lon: String) extends GuidExtension with Serializable {
+    private var _lon: String,
+    private var _account: Account) extends GuidExtension with Serializable {
 
   override def toString: String = {
     f"Client ID: $id at location ($lat, $lon)"
@@ -19,9 +20,11 @@ class Client(
   def clientType = _clientType
   def lat = _lat
   def lon = _lon
+  def account :Account = _account
 
   //Setter
   def clientType_= (value:String) = _clientType = value
   def lat_= (value: String) = _lat = value
   def lon_= (value: String)= _lon = value
+  def account_= (value:Account) = _account = value
 }
