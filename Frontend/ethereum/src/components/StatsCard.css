@@ -1,0 +1,47 @@
+.StatsCard {
+  width:16.66%;
+  margin: 10px;
+}
+
+.statContainer {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .statContainer-icon {
+    order: 1;
+    width: 30%;
+  }
+
+  .statContainer-displayContainer {
+    order: 2;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: right;
+    width: 70%;
+  }
+  
+  .statContainer-name {
+    order: 1;
+    font-size: 14px; 
+    color: darkgrey;
+    width: 100%;
+  }
+  
+  .statContainer-stat {
+    order: 2;
+    font-style: italic;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: left;
+    width: 100%;
+  }
+  
+  .statContainer-value {
+    font-size: 30px;
+  }
+
+  .statContainer-unit {
+    margin-top: 10%;
+    margin-left:10%;
+  }

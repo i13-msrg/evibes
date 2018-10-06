@@ -1,0 +1,24 @@
+.PlusMinusControl {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left:15px;
+    margin-right:15px;
+    border: 2em;
+    border-color: azure;
+    background-color: #f2f2f2; 
+}
+
+.AddIcon {
+    order: 1;
+}
+
+.RemoveIcon {
+    order: 3;
+}
+
+.NameTag {
+    order: 2;
+    margin-left:15px;
+    margin-right:15px;
+    margin-top: 5px;
+}

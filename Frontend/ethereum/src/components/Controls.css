@@ -1,0 +1,27 @@
+.Controls {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: left;
+}
+
+.StartStopControl {
+    order: 1;
+    font-size: 14px; 
+}
+
+.Divider {
+    margin-left: 10px;
+    order:2;
+}
+
+.NodeControl {
+    order:3;
+}
+
+.TxRateControl {
+    order:4;
+}
+
+.MinerRateControl {
+    order:5;
+}

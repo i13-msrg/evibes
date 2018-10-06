@@ -1,0 +1,25 @@
+.GraphCard {
+    width:20%;
+    margin: 10px;
+  }
+  
+  .graphContainer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .graphContainer-name {
+      order: 1;
+      font-size: 14px; 
+      width: 100%;
+      color: darkgrey;
+    }
+    
+    .graphContainer-graph {
+      order: 2;
+      margin-top: 30px;
+      font-style: italic;
+    }
+    
+  
