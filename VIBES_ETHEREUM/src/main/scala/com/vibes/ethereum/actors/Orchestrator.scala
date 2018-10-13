@@ -2,8 +2,10 @@ package com.vibes.ethereum.actors
 
 import akka.event.Logging
 import akka.actor.{Actor, ActorRef, Props}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import com.vibes.ethereum.models.{Account, Client, Transaction}
 import com.vibes.ethereum.Setting
+import com.vibes.ethereum.actors.ethnode.{AccountingActor, EventJson}
 
 import scala.collection.AbstractSeq
 import scala.collection.mutable.ListBuffer
@@ -21,7 +23,7 @@ object Orchestrator {
 // TODO : How to stop the orchestrator. When is the simulation complete
 
 // TODO: HTTP API access for Orchestrator
-class Orchestrator extends Actor {
+class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson]) extends Actor {
   val log = Logging(context.system, this)
   var internalState = Vector[String]()
   var nodeRef = new HashMap[String, ActorRef]
@@ -39,8 +41,9 @@ class Orchestrator extends Actor {
   def state = internalState
 
   def initializeSimilator(settings: Setting.type ) = {
+    val reducer = context.system.actorOf(Props[Reducer], "reducer")
     var adjmat = generateNeighbours(settings.nodesNum, settings.minConn, settings.maxConn)
-    val nodes =  createNodes(settings, adjmat)
+    val nodes =  createNodes(settings, adjmat, reducer)
     val accounts = createAccounts(settings.accountsNum, nodes)
 
     //TODO: Terminate once the expected number of transactions are generated
@@ -58,27 +61,27 @@ class Orchestrator extends Actor {
   }
 
   // Create Nodes
-  def createNodes(setting: Setting.type, adjMatrix: Array[Array[Int]] ) : ListBuffer[String] = {
+  def createNodes(setting: Setting.type, adjMatrix: Array[Array[Int]], reducer:ActorRef ) : ListBuffer[String] = {
     var clientList = new ListBuffer[String]()
     for(i <- 0 to setting.nodesNum-1) {
       val client = new Client("FULL_NODE", _lat = "10E20W", _lon = "20N5S")
       val neighbourName = compileNeighbourList(i, adjMatrix(i))
-      val nodeActor = context.system.actorOf(Props(new Node(client, neighbourName, setting)), "node_" + i.toString)
+      val accountingActor: ActorRef = context.actorOf(Props(new AccountingActor(client.id, evmQueue, reducer)))
+      val nodeActor = context.system.actorOf(Props(new Node(client, neighbourName, reducer, accountingActor, setting)), "node_" + i.toString)
       clientList += client.id
       nodeRef.put(client.id, nodeActor)
-      nodeActor ! StartNode
     }
     return clientList
   }
 
   // Create Accounts
-  def createAccounts(count: Int, clientList: ListBuffer[String]): ListBuffer[Account] ={
+  def createAccounts(count: Int, clientList: ListBuffer[String]): ListBuffer[Account] = {
     var i =0
     var accList = new ListBuffer[Account]()
     for(i <- 0 to count) {
       val acc = new Account(_creatorId = Random.shuffle(clientList).take(1)(0))
       accList += acc
-      //println("Account Created : " + acc.address)
+      log.debug("Account Created : " + acc.address)
       val node = nodeRef.get(acc.creatorId)
       node.get ! CreateAccount(acc)
     }

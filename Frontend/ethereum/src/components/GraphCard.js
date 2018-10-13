@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './GraphCard.css';
 import {Elevation, Card } from "@blueprintjs/core";
-import {linearGradient, AreaChart,CartesianGrid,XAxis,YAxis,Tooltip,Area } from 'recharts';
+import {linearGradient, AreaChart,Tooltip,Area } from 'recharts';
 
 const data = [
     {name: 'Page A', uv: 4000, pv: 2400, amt: 2400},

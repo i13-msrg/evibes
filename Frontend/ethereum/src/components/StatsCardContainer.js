@@ -3,6 +3,10 @@ import './StatsCardContainer.css';
 import StatsCard from './StatsCard';
 
 class StatsCardContainer extends Component {
+
+  componentDidMount() {
+    
+  }
   render() {
     return (
         <div className="StatsCardContainer">

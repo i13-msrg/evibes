@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import './StatsCard.css';
 import {Elevation, Card } from "@blueprintjs/core";
-import { Icon, Intent } from "@blueprintjs/core";
-import { IconNames } from "@blueprintjs/icons";
+import { Icon } from "@blueprintjs/core";
+
 
 
 class StatsCard extends Component {

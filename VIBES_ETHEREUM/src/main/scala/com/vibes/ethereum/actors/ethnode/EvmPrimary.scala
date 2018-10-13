@@ -2,10 +2,12 @@ package com.vibes.ethereum.actors.ethnode
 
 import akka.actor.{Actor, ActorRef}
 import akka.event.Logging
+import com.vibes.ethereum.actors.ethnode.AccountingActor._
 import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
 import com.vibes.ethereum.actors.ethnode.TxPoolerActor._
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 
@@ -18,17 +20,32 @@ import scala.collection.mutable
 import com.vibes.ethereum.service.RedisManager
 import scala.collection.mutable.HashMap
 
-class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
-  val redis: RedisManager = new RedisManager(clientID)
+class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef, nodeActor: ActorRef) extends Actor{
+  accountingActor ! EvmStarted
   var accountsAffected = new HashMap[String, Account]
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
-  val miner: Account = redis.getClient(clientID).get.account
+  val miner: Account = client.account
   //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
-  var parent: Block = new Block() // There will be a genesis block here
+  var parent: Block = new Block(_transactionList = new ListBuffer[Transaction]) // There will be a genesis block here
+  accountingActor ! EvmInitialized
+
+
+  override def preStart(): Unit = {
+    log.debug("Starting EvmPrimary")
+    println("Starting EvmPrimary : " + client.id)
+    accountingActor ! EvmStart
+  }
+
+  override def postStop(): Unit = {
+    accountingActor ! EvmStopped
+      super.postStop()
+  }
 
   import EvmPrimary._
+
+
   override def receive: Receive = {
-    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => blockCreate(txList)
+    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => {accountingActor ! StartMining; blockCreate(txList)}
     case NewExtBlock(block: Block) => handleNewBlock(block)
     case _ => unhandled(message = AnyRef)
   }
@@ -36,11 +53,11 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
   val log = Logging(context.system, this)
 
   def handleNewBlock(block: Block) = {
+    accountingActor ! BlockVerificationStarted
     blockCreate(block.transactionList)
   }
 
   def blockCreate(txList : mutable.ListBuffer[Transaction]) = {
-
     for(tx <- txList){
       if(redis.getTx(tx.id) == None) {
         executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
@@ -48,7 +65,7 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
     }
     // Add the items in local context in the DB
     //Add the updated sender and receiver in the database
-    val block = new Block(txList)
+    val block: Block = new Block(_transactionList = txList)
 
     block.gasLimit = calculateBlockGasLimit(parent.gasLimit)
     block.beneficiary = miner.address
@@ -82,6 +99,7 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
     println("Block Created Successfully")
     parent = block
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
+    accountingActor ! BlockPropogated
   }
 
 
@@ -180,7 +198,6 @@ class EvmPrimary(clientID: String, nodeActor: ActorRef) extends Actor{
       var sigma1 = -1
       if (currTimestamp < (parentTimestamp + 13)) {sigma1 =  1}
       val D1 = parentDifficulty + (x*sigma1) + epsilon
-
       if(D0 > D1) return D0 else return D1
     }
     else {

@@ -1,9 +1,15 @@
 package com.vibes.ethereum.actors.ethnode
 
 import akka.actor.{Actor, ActorRef}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.stream.scaladsl.SourceQueueWithComplete
 import com.vibes.ethereum.actors.Reducer
 import com.vibes.ethereum.helpers.{EvmState, NodeState, TxPoolState}
 import com.vibes.ethereum.models.{Block, Stats}
+import spray.json.DefaultJsonProtocol
+
+
+case class EventJson(id:String, attr: String, value:String)
 
 object AccountingActor {
   //EVM related events
@@ -36,7 +42,8 @@ object AccountingActor {
 }
 
 
-class AccountingActor(clientId: String, reducer: ActorRef) extends Actor{
+class AccountingActor(clientId: String, evmQueue: SourceQueueWithComplete[EventJson], reducer: ActorRef) extends Actor{
+  println("Accounting actor started for " + clientId)
   var evmState  = EvmState.STOPPED
   var nodeState = NodeState.STOPPED
   var txPoolState = TxPoolState.STOPPED
@@ -101,6 +108,7 @@ class AccountingActor(clientId: String, reducer: ActorRef) extends Actor{
     }
 
 
+    /*
     case EvmStart() => {evmState = EvmState.STARTING; reducer ! Reducer.evmStateUpdate(clientId, evmState)}
     case EvmStarted() => {evmState = EvmState.INITIALIZING; reducer ! Reducer.evmStateUpdate(clientId, evmState)}
     case EvmInitialized() => {evmState = EvmState.IDLE; reducer ! Reducer.evmStateUpdate(clientId, evmState)}
@@ -108,12 +116,30 @@ class AccountingActor(clientId: String, reducer: ActorRef) extends Actor{
     case BlockPropogated() => {evmState = EvmState.IDLE; reducer ! Reducer.evmStateUpdate(clientId, evmState)}
     case BlockVerificationStarted() => {evmState = EvmState.VERFYING; reducer ! Reducer.evmStateUpdate(clientId, evmState)}
     case EvmStopped() => {evmState = EvmState.STOPPED; reducer ! Reducer.evmStateUpdate(clientId, evmState)}
+    */
 
+    case EvmStart => {evmState = EvmState.STARTING; evmQueue offer EventJson(clientId, "evmState", "Starting")}
+    case EvmStarted => {evmState = EvmState.INITIALIZING; evmQueue offer EventJson(clientId, "evmState", "Started")}
+    case EvmInitialized => {evmState = EvmState.IDLE; evmQueue offer EventJson(clientId, "evmState", "Initialized")}
+    case StartMining => {evmState = EvmState.MINING; evmQueue offer EventJson(clientId, "evmState", "Started Mining")}
+    case BlockPropogated => {evmState = EvmState.IDLE; evmQueue offer EventJson(clientId, "evmState", "Block Propogated")}
+    case BlockVerificationStarted => {evmState = EvmState.VERFYING; evmQueue offer EventJson(clientId, "evmState", "Block Verification Started")}
+    case EvmStopped => {evmState = EvmState.STOPPED; evmQueue offer EventJson(clientId, "evmState", "Stopped")}
+
+    /*
     case PoolerStart() => {txPoolState = TxPoolState.STARTING; reducer ! Reducer.poolStateUpdate(clientId, txPoolState)}
     case PoolerStarted() => {txPoolState = TxPoolState.INITIALIZING; reducer ! Reducer.poolStateUpdate(clientId, txPoolState)}
     case PoolerInitialized() => {txPoolState = TxPoolState.IDLE; reducer ! Reducer.poolStateUpdate(clientId, txPoolState)}
     case PoolerStopped() => {txPoolState = TxPoolState.STOPPED; reducer ! Reducer.poolStateUpdate(clientId, txPoolState)}
     case TxPoolFull() => {txPoolState = TxPoolState.REJECTING_TX; reducer ! Reducer.poolStateUpdate(clientId, txPoolState)}
+    */
+
+    case PoolerStart => {txPoolState = TxPoolState.STARTING; evmQueue offer EventJson(clientId, "poolState", "Starting")}
+    case PoolerStarted => {txPoolState = TxPoolState.INITIALIZING; evmQueue offer EventJson(clientId, "poolState", "Started")}
+    case PoolerInitialized => {txPoolState = TxPoolState.IDLE; evmQueue offer EventJson(clientId, "poolState", "Initialized")}
+    case PoolerStopped => {txPoolState = TxPoolState.STOPPED; evmQueue offer EventJson(clientId, "poolState", "Stopped")}
+    case TxPoolFull => {txPoolState = TxPoolState.REJECTING_TX; evmQueue offer EventJson(clientId, "poolState", "Tx Pool Full")}
+
 
     case NodeStart() => {nodeState = NodeState.STARTING; reducer ! Reducer.nodeStateUpdate(clientId, nodeState)}
     case NodeStarted() => {nodeState = NodeState.INITIALIZING; reducer ! Reducer.nodeStateUpdate(clientId, nodeState)}

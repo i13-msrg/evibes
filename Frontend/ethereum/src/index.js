@@ -8,6 +8,8 @@ import GraphCardContainer from './components/GraphCardContainer';
 import NodeTable from './components/NodeTable'
 import Controls from './components/Controls'
 
+import 'react-table/react-table.css'
+
 import {Navbar, Button, Alignment} from "@blueprintjs/core";
 
 ReactDOM.render(

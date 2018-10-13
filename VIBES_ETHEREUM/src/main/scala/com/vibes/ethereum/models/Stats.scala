@@ -59,10 +59,10 @@ class Stats(
 
 
   //Setter
-  def blockNum_= (value : Int) = blockNum = value
+  def blockNum_= (value : Int): Int = blockNum = value
   def timestamp_= (value: Long)=_timestamp = value
   def blockTime_= (value: Double)=_blockTime = value
-  def avgBlockTime_= (value: Double) = avgBlockTime= value
+  def avgBlockTime_= (value: Double): Double= avgBlockTime= value
   def difficulty_= (value: Double) = _difficulty = value
   def avgDifficulty_= (value: Double) =  _avgDifficulty = value
   def txCost_= (value: Double) =  _txCost = value
