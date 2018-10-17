@@ -46,7 +46,6 @@ class RedisManager(
     val acc = redis.get(clientID + "-ACC-" + accAddr)
     if(acc == None) {return None}
     else {return Try(deserialise(acc.toString).asInstanceOf[Account]).toOption}
-
   }
 
   def putAccount(account: Account) : Option[String] = {

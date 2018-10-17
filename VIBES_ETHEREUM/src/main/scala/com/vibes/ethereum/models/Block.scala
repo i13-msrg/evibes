@@ -12,7 +12,7 @@ class Block(
   private var _stateRoot: String= "None",
   private var _transactionRoot: String= "None",
   private var _receiptsRoot: String= "None",
-  private var _difficulty: Double = 0,
+  private var _difficulty: Long = 0,
   private var _number: Long = 0,
   private var _gasLimit: Float = 0,
   private var _gasUsed: Float = 0,
@@ -48,7 +48,7 @@ class Block(
   def stateRoot_=(value:String) = _stateRoot= value
   def transactionRoot_=(value:String) = _transactionRoot= value
   def receiptsRoot_=(value:String) = _receiptsRoot= value
-  def difficulty_=(value:Double) = _difficulty= value
+  def difficulty_=(value:Long) = _difficulty= value
   def number_= (value:Long)= _number= value
   def gasLimit_=(value:Float) = _gasLimit= value
   def gasUsed_=(value:Float) = _gasUsed= value

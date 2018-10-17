@@ -4,7 +4,7 @@ import com.vibes.ethereum.helpers.GuidExtension
 
 
 @SerialVersionUID(123L)
-class Stats(
+case class Stats(
    private var _blockNum : Int = 0,
    private var _timestamp : Long = 0,
    private var _blockTime : Double = 0,
@@ -84,7 +84,7 @@ class Stats(
 
   //Utility function: Running average calculation
   def calcAvg(n: Int, oldAvg:Double, newVal:Double): Double = {
-    val avg = ((n-1)*oldAvg + newVal)/n
+    val avg = (oldAvg + newVal)/n
     return avg
   }
 }

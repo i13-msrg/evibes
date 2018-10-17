@@ -23,10 +23,12 @@ object Orchestrator {
 // TODO : How to stop the orchestrator. When is the simulation complete
 
 // TODO: HTTP API access for Orchestrator
-class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson]) extends Actor {
+class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson], localStatsQueue: SourceQueueWithComplete[LocalStatsJson], globalEventsQueue: SourceQueueWithComplete[StatsJson]) extends Actor {
   val log = Logging(context.system, this)
   var internalState = Vector[String]()
   var nodeRef = new HashMap[String, ActorRef]
+  var bootNodes = new ListBuffer[String]
+  var genesisAccList = new ListBuffer[Account]
 
   import Orchestrator._
   override def preStart(): Unit = {
@@ -40,10 +42,29 @@ class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson]) extends Actor {
 
   def state = internalState
 
+  def createGenesisAccounts(noOfAcc : Int): ListBuffer[Account] = {
+    var accList: ListBuffer[Account] = new ListBuffer[Account]()
+    var i = 0
+    for(i <- 1 to noOfAcc) {
+      var acc = new Account(_creatorId = "GENESIS_ACCOUNT")
+      accList += acc
+    }
+    return accList
+  }
+
+
   def initializeSimilator(settings: Setting.type ) = {
-    val reducer = context.system.actorOf(Props[Reducer], "reducer")
-    var adjmat = generateNeighbours(settings.nodesNum, settings.minConn, settings.maxConn)
-    val nodes =  createNodes(settings, adjmat, reducer)
+    val reducer = context.system.actorOf(Props(new Reducer(globalEventsQueue, localStatsQueue)), "reducer")
+    var adjmat = generateNeighbours(settings.bootNodes, settings.minConn, settings.maxConn)
+    bootNodes = createNodes(settings, adjmat, reducer, bootNodes, "BOOT_NODES")
+    genesisAccList = createGenesisAccounts(settings.bootAccNum)
+
+    val bootAccounts = createAccounts(settings.bootAccNum, bootNodes)
+
+
+    // Generate Secondary nodes
+    adjmat = generateNeighbours(settings.nodesNum, settings.minConn, settings.maxConn)
+    val nodes =  createNodes(settings, adjmat, reducer, bootNodes, "SECONDARY_FULL_NODES")
     val accounts = createAccounts(settings.accountsNum, nodes)
 
     //TODO: Terminate once the expected number of transactions are generated
@@ -60,19 +81,39 @@ class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson]) extends Actor {
     })
   }
 
+
+
   // Create Nodes
-  def createNodes(setting: Setting.type, adjMatrix: Array[Array[Int]], reducer:ActorRef ) : ListBuffer[String] = {
+  /*
+  * 1. Create primary nodes
+  * 2. Add genesis block to all the primary nodes
+  * 3. When a secondary node is created, it selects one primary node at random and copies all the blockchain from the primary node
+  *
+  * */
+  def createNodes(setting: Setting.type, adjMatrix: Array[Array[Int]], reducer:ActorRef, bootNodes: ListBuffer[String], nodeType: String ) : ListBuffer[String] = {
     var clientList = new ListBuffer[String]()
+
     for(i <- 0 to setting.nodesNum-1) {
-      val client = new Client("FULL_NODE", _lat = "10E20W", _lon = "20N5S")
+      val client = new Client(nodeType, _lat = "10E20W", _lon = "20N5S")
       val neighbourName = compileNeighbourList(i, adjMatrix(i))
       val accountingActor: ActorRef = context.actorOf(Props(new AccountingActor(client.id, evmQueue, reducer)))
-      val nodeActor = context.system.actorOf(Props(new Node(client, neighbourName, reducer, accountingActor, setting)), "node_" + i.toString)
+
+      if (nodeType != "BOOT_NODES") {
+        var bootNode = nodeRef.get(Random.shuffle(bootNodes).take(1)(0)).get
+        var nodeActor = context.system.actorOf(Props(new Node(client, neighbourName, reducer, accountingActor, Option(bootNode), setting)), "node_" + i.toString)
+        nodeRef.put(client.id, nodeActor)
+        nodeActor ! InitiateBlockchainCopy
+      }
+      else {
+        var nodeActor = context.system.actorOf(Props(new Node(client, neighbourName, reducer, accountingActor, None, setting)), "node_" + i.toString)
+        nodeRef.put(client.id, nodeActor)
+        nodeActor ! InitializeBootNode(genesisAccList)
+      }
       clientList += client.id
-      nodeRef.put(client.id, nodeActor)
     }
     return clientList
   }
+
 
   // Create Accounts
   def createAccounts(count: Int, clientList: ListBuffer[String]): ListBuffer[Account] = {
@@ -87,6 +128,7 @@ class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson]) extends Actor {
     }
     return accList
   }
+
 
   //Creates a list of transactions. Can be done periodically
   def createTransactions(count: Int, accList: ListBuffer[Account]): ListBuffer[Transaction] = {
@@ -117,10 +159,14 @@ class Orchestrator(evmQueue: SourceQueueWithComplete[EventJson]) extends Actor {
     adjMatrix
   }
 
-  def compileNeighbourList(nodeIndex: Int, adjRow: Array[Int]) = {
-    var nodeList = new ListBuffer[String]
+
+  def compileNeighbourList(nodeIndex: Int, adjRow: Array[Int]): ListBuffer[ActorRef] = {
+    var nodeList = new ListBuffer[ActorRef]
     for (i <- 0 to adjRow.length-1 if adjRow(i) == 1) {
-      nodeList += "node_" + i
+      var node = nodeRef.get("node_" + i)
+      node match{
+        case Some(node) => {nodeList += node}
+      }
     }
     nodeList
   }

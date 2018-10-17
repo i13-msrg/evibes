@@ -5,6 +5,7 @@ import akka.event.Logging
 import com.vibes.ethereum.actors.ethnode.AccountingActor._
 import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
 import com.vibes.ethereum.actors.ethnode.TxPoolerActor._
+import com.vibes.ethereum.actors.Node
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -12,8 +13,9 @@ import scala.util.Random
 
 
 object EvmPrimary {
-  case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction])
+  case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction], parent: Block)
   case class NewExtBlock(block: Block)
+  case class InitializeGenesisBlock(block: Block)
 }
 
 import scala.collection.mutable
@@ -26,7 +28,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
   val miner: Account = client.account
   //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
-  var parent: Block = new Block(_transactionList = new ListBuffer[Transaction]) // There will be a genesis block here
+  var parentBlock: Block = new Block(_transactionList = new ListBuffer[Transaction]) // There will be a genesis block here
   accountingActor ! EvmInitialized
 
 
@@ -42,22 +44,34 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   }
 
   import EvmPrimary._
-
+  import Node._
 
   override def receive: Receive = {
-    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => {accountingActor ! StartMining; blockCreate(txList)}
+    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction], parent: Block) => {accountingActor ! StartMining; blockCreate(txList, parent)}
     case NewExtBlock(block: Block) => handleNewBlock(block)
+    case InitializeGenesisBlock(block: Block) => initializeGenesisBlock(block)
     case _ => unhandled(message = AnyRef)
   }
 
   val log = Logging(context.system, this)
 
-  def handleNewBlock(block: Block) = {
-    accountingActor ! BlockVerificationStarted
-    blockCreate(block.transactionList)
+
+
+  def initializeGenesisBlock(block: Block) = {
+    parentBlock = block
   }
 
-  def blockCreate(txList : mutable.ListBuffer[Transaction]) = {
+
+  def handleNewBlock(block: Block) = {
+    accountingActor ! BlockVerificationStarted
+    var anscBlock = redis.getBlock(block.id)
+    anscBlock match {
+      case Some(anscBlock) => {blockCreate(block.transactionList, anscBlock)}
+      case _ => {println("Invalid Block. DROPPING")}
+    }
+  }
+
+  def blockCreate(txList : mutable.ListBuffer[Transaction], parent: Block) = {
     for(tx <- txList){
       if(redis.getTx(tx.id) == None) {
         executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
@@ -97,9 +111,10 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     //TODO: Update other fields in the block
     redis.putBlock(block)
     println("Block Created Successfully")
-    parent = block
+    parentBlock = block
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
+    nodeActor ! PropogateToNeighbours(block)
   }
 
 
@@ -187,9 +202,9 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   }
 
 
-  def calculateDifficulty(blockNumber: Long, parentDifficulty: Double, currTimestamp: Long, parentTimestamp: Long): Double = {
+  def calculateDifficulty(blockNumber: Long, parentDifficulty: Double, currTimestamp: Long, parentTimestamp: Long): Long = {
     val homesteadBlock = 150000
-    val D0 = 131072
+    val D0 = 131072L
     val epsilon = scala.math.pow(2,((blockNumber/100000).floor -2)).floor
     val x = (parentDifficulty/2048)
 
@@ -198,14 +213,14 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       var sigma1 = -1
       if (currTimestamp < (parentTimestamp + 13)) {sigma1 =  1}
       val D1 = parentDifficulty + (x*sigma1) + epsilon
-      if(D0 > D1) return D0 else return D1
+      if(D0 > D1) return D0 else return D1.toLong
     }
     else {
       val sigma2_1 = 1 - ((currTimestamp - parentTimestamp)/10).floor
       val sigma2 = if (sigma2_1 > -99) sigma2_1 else -99
       val D2 = parentDifficulty + (x*sigma2) + epsilon
 
-      if (D0 > D2) return D0 else return D2
+      if (D0 > D2) return D0 else return D2.toLong
     }
   }
 

@@ -84,20 +84,19 @@ def isGasLimitReached: Boolean = {
       var gasCount: Float = 0
       println("GasLimit reached")
       // Dequeue all the transactions from the queue
-      while(gasCount >= blockGasLimit) {
-        // Create a list of transactions
-        var tx: Transaction = txPool.dequeue() //should we check empty dequeue ??
-        gasCount += tx.gasLimit
-        txList += tx
-        println(f"Added transaction to Block. ID: $tx.id")
-      }
-      println("Send the Transaction LIst to EVMPrimaryActor")
-      gasCount = 0
-      //A probability function that determines if the PoW is right. If False skip block creation
-
       // TODO: Change this to reflect real ethereaum PoW probability
       if (scala.util.Random.nextInt(10) == 1) {
+        while (gasCount >= blockGasLimit) {
+          // Create a list of transactions
+          var tx: Transaction = txPool.dequeue() //should we check empty dequeue ??
+          gasCount += tx.gasLimit
+          txList += tx
+          println(f"Added transaction to Block. ID: $tx.id")
+        }
+        println("Send the Transaction LIst to EVMPrimaryActor")
         evmPrimary ! InternalBlockCreated(txList)
+        gasCount = 0
+        //A probability function that determines if the PoW is right. If False skip block creation
         return true
       }
       else {return false}
@@ -106,8 +105,6 @@ def isGasLimitReached: Boolean = {
   }
 
   override def unhandled(message: Any): Unit = {
-    // This message type is not handled by the TxPoolerActor
-    // Write the msg details in the log
     println("Message type not handled in TxPooler")
   }
 }
