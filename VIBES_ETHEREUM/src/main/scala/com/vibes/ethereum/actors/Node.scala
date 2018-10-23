@@ -1,49 +1,95 @@
 package com.vibes.ethereum.actors
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorPath, ActorRef, Props}
 import akka.event.Logging
 import com.vibes.ethereum.actors.ethnode.{EvmPrimary, TxPoolerActor}
 import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
 import com.vibes.ethereum.service.RedisManager
 import com.vibes.ethereum.Setting
-import com.vibes.ethereum.actors.ethnode.AccountingActor.{NodeInitialized, NodeStart, NodeStarted, NodeStop}
+import com.vibes.ethereum.actors.ethnode.AccountingActor._
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
+import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.util.Random
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Node {
   case class NewTx(tx: Transaction)
   case class NewBlock(block: Block)
-  case class InitiateBlockchainCopy()
+
+  case class InitializeFullNode(bootNode: ActorRef)
   case class InitializeBootNode(accList: ListBuffer[Account])
   case class BlockchainCopyRequest()
-  // Response will return the block id to sopy all the account states in the new block
   case class BlockchainCopyResponse(accountList: ListBuffer[Account])
   case class CreateAccount(account: Account)
+
   case class PropogateToNeighbours(block: Block)
+
+  case class AddNeighbours(neighbours:HashMap[String, ActorRef])
+  case class NeighbourCopyRequest(clientId: String)
+  case class NeighbourCopyResponse(neighbourMap: mutable.HashMap[String, ActorRef])
+  case class NodeDiscoveryPing(clientId: String)
+  case class NodeDiscoveryPong(clientId: String)
 }
 
-class Node(client: Client, neighbourName:ListBuffer[ActorRef], reducer: ActorRef, accountingActor: ActorRef, bootNode: Option[ActorRef], setting: Setting.type ) extends Actor {
-  accountingActor ! NodeStarted
+class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNode: Option[ActorRef], setting: Setting.type ) extends Actor {
+  accountingActor ! NodeStart
   val log = Logging(context.system, this)
+  log.debug("Starting Node")
+  //println("Starting Node : " + client.id)
+  accountingActor ! NodeStarted
+
+  var btNode = bootNode
   val redis: RedisManager = new RedisManager(client.id)
   val evmPrimaryActor: ActorRef = context.actorOf(Props(new EvmPrimary(client, redis, accountingActor, context.self)))
   val txPoolerActor: ActorRef = context.actorOf(Props(new TxPoolerActor(evmPrimaryActor, accountingActor, setting, client.id)))
-  var accountList = ListBuffer[String]
-  import Node._
+  var accountList = new ListBuffer[String]
+  var neighbourMap = new HashMap[String, ActorRef]
+  var neighbourStatus = new HashMap[String, Boolean]
 
   accountingActor ! NodeInitialized
-
-
-  override def preStart(): Unit = {
-    log.debug("Starting Node")
-    println("Starting Node : " + client.id)
-    accountingActor ! NodeStart
-  }
+  import Node._
 
 
   override def postStop(): Unit = {
     accountingActor ! NodeStop
     super.postStop()
+  }
+
+  def addNeighbours(neighbours: HashMap[String, ActorRef]): Unit = {
+    val nodeList = neighbours.keys.toList
+    for(key <- nodeList) {
+      if(neighbourMap.contains(key) == false) {
+        neighbourMap.put(key, neighbours.get(key).get)
+        neighbourStatus.put(key, true)
+        accountingActor ! NeighbourUpdate(nodeList.length)
+      }
+    }
+  }
+
+  def scheduleNodeDiscovery() = {
+    context.system.scheduler.schedule(60 second, 120 second, runnable = new Runnable {
+      override def run(): Unit = {
+        accountingActor ! Discover
+        val statusKeys = neighbourStatus.keys.toList
+        for (key <- statusKeys) {
+          if (neighbourStatus.get(key) == false) {
+            neighbourMap.remove(key)
+            neighbourStatus.remove(key)
+          }
+        }
+        accountingActor ! NeighbourUpdate(neighbourMap.keys.toList.length)
+        for (key <- neighbourMap.keysIterator) {
+          neighbourMap.get(key).get ! NodeDiscoveryPing(client.id)
+          neighbourStatus.put(key, false)
+        }
+        if (client.clientType == "FULLNODE") {
+          btNode.get ! NeighbourCopyRequest(client.id)
+        }
+        accountingActor ! NodeInitialized
+      }
+    })
   }
 
 
@@ -55,12 +101,46 @@ class Node(client: Client, neighbourName:ListBuffer[ActorRef], reducer: ActorRef
     case NewTx(tx) => {txPoolerActor ! AddTxToPool(tx); propogateToNeighboursTx(tx)}
     case NewBlock(block: Block) => {evmPrimaryActor ! NewExtBlock(block)}
     case CreateAccount(account: Account) => createAccount(account)
-    case InitializeBootNode(accList: ListBuffer[Account]) => initializeBootNode(accList)
-    case InitiateBlockchainCopy => initiateBlockchainCopy()
-    case BlockchainCopyRequest => copyRequest()
-    case BlockchainCopyResponse(accountList: ListBuffer[Account]) => blockchainResponse(accountList)
     case PropogateToNeighbours(block: Block) => propogateToNeighbours(block)
+
+    case NeighbourCopyRequest(clientId: String) => {
+                                                      neighbourMap.put(clientId, sender)
+                                                      neighbourStatus.put(clientId, true)
+                                                      sender ! NeighbourCopyResponse(neighbourMap)
+                                                    }
+    case NeighbourCopyResponse(neighbourMap: mutable.HashMap[String, ActorRef]) => addNeighbours(neighbourMap)
+    case AddNeighbours(neighbours: HashMap[String, ActorRef]) => {addNeighbours(neighbours)}
+    case NodeDiscoveryPing(clientId: String) => handlePing(clientId)
+    case NodeDiscoveryPong(clientId: String) => handlePong(clientId)
+
+    case InitializeBootNode(accList: ListBuffer[Account]) => initializeBootNode(accList)
+    case InitializeFullNode(bootNode: ActorRef) => initializeFullNode(bootNode)
+    case BlockchainCopyRequest() => copyRequest()
+    case BlockchainCopyResponse(accountList: ListBuffer[Account]) => blockchainResponse(accountList)
     case _ => unhandled(message = AnyRef)
+  }
+
+
+  def handlePing(senderId : String) = {
+    //Random probability
+    var seed = Random.nextInt(10)
+    if(seed%2 == 0) {
+      sender ! NodeDiscoveryPong(client.id)
+      neighbourMap.put(senderId, sender)
+      neighbourStatus.put(senderId, true)
+    }
+  }
+
+  def handlePong(senderId : String) = {
+    neighbourStatus.put(senderId, true)
+    neighbourMap.put(senderId, sender)
+    accountingActor ! NeighbourUpdate(neighbourMap.keys.toList.length)
+  }
+
+  def initializeFullNode(bNode: ActorRef) = {
+    initiateBlockchainCopy(bNode)
+    bNode ! NeighbourCopyRequest(client.id)
+    btNode = Option(bNode)
   }
 
 
@@ -69,18 +149,22 @@ class Node(client: Client, neighbourName:ListBuffer[ActorRef], reducer: ActorRef
     1. Find the neighbour actorref
     2. Send the msg
     * */
-    for (neighbour <- neighbourName) {
+    for (neighbour <- neighbourMap.valuesIterator) {
       neighbour ! NewBlock(block)
     }
   }
+
 
   def propogateToNeighboursTx(tx: Transaction) = {
     /*
     1. Find the neighbour actorref
     2. Send the msg
     * */
-    for (neighbour <- neighbourName) {
-      neighbour ! NewTx(tx)
+    for (neighbour <- neighbourMap.valuesIterator) {
+      tx.ttl -= 1
+      if (tx.ttl > 0) {neighbour ! NewTx(tx)}
+      else {//println("Transaction dropped. TTL expired")
+         }
     }
   }
 
@@ -92,14 +176,8 @@ class Node(client: Client, neighbourName:ListBuffer[ActorRef], reducer: ActorRef
   }
 
 
-  def initiateBlockchainCopy() = {
-    bootNode match{
-      case Some(bootNode) => {
+  def initiateBlockchainCopy(bootNode: ActorRef) = {
         bootNode ! BlockchainCopyRequest
-      }
-      case _ => {println("THis is a Boot Node. Not a secondary node")}
-    }
-    // Change state to : Initiated blockchain copy
   }
 
   def copyRequest() = {
@@ -114,18 +192,19 @@ class Node(client: Client, neighbourName:ListBuffer[ActorRef], reducer: ActorRef
     //Update the node state to : Copying the blockchain
     for (acc<- accList) {
       redis.putAccount(acc)
+      accountList += acc.address
     }
   }
 
   def createAccount(account: Account) = {
     val key = redis.putAccount(account)
     accountList += key.get
-    println("Account Created Successfully in Node")
+    //println("Account Created Successfully in Node")
   }
 
   override def unhandled(message: Any): Unit = {
     // This message type is not handled by the TxPoolerActor
     // Write the msg details in the log
-    println( message.toString() + "Message type not handled in Node Actor")
+    //println( message.toString() + "Message type not handled in Node Actor")
   }
 }

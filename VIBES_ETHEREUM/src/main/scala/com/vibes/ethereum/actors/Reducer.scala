@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 case class StatsJson(blockNum : Int, blockTime : Double, difficulty : Double, txCost : Double,
                      gasSpending : Double, gasLimit : Double, uncleCount : Double, peers : Double,
-                     pendingTx : Double, propTime : Long)
+                     pendingTx : Double, propTime : Long, timestamp : Long)
 
 
 case class LocalStatsJson(clientId: String, blockNum : Int, timestamp : Long, blockTime : Double, avgBlockTime : Double,
@@ -24,12 +24,13 @@ object Reducer {
 }
 
 class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: SourceQueueWithComplete[LocalStatsJson]) extends Actor{
+  println("Starting Reducer")
   var statsQueue = new ListBuffer[Stats]
   var globalStats = new Stats()
   import Reducer._
+
   override def receive: Receive = {
     case StatsUpdate(clientId, stats) => statsUpdate(clientId, stats)
-    case NodeUpdate(clientId, stats, nodeAddr, peerRemoved) => {}
   }
 
 
@@ -45,6 +46,7 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
     globalStats.avgPeers_= (stats.calcAvg(statsQueue.length, globalStats.avgPeers, stats.peers))
     globalStats.avgPendingTx_= (stats.calcAvg(statsQueue.length, globalStats.avgPendingTx, stats.pendingTx))
     globalStats.avgPropTime_= (stats.calcAvg(statsQueue.length, globalStats.avgPropTime, stats.propTime).toLong)
+    print("Stats Update received")
 
     localStream offer LocalStatsJson(
       clietnID, stats.blockNum , stats.timestamp, stats.blockTime, stats.avgBlockTime, stats.difficulty, stats.avgDifficulty,
@@ -53,8 +55,7 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
       stats.avgPropTime)
   }
 
-
-  context.system.scheduler.schedule(60 second, 60 second, new Runnable {
+  context.system.scheduler.schedule(10 second, 10 second, new Runnable {
     override def run(): Unit = {
       println("SENDING REDUCER DATA OVER THE STREAM")
       globalStream offer StatsJson(
@@ -67,7 +68,8 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
         globalStats.avgUncleCount,
         globalStats.avgPeers,
         globalStats.avgPendingTx,
-        globalStats.avgPropTime)
+        globalStats.avgPropTime,
+        System.currentTimeMillis() / 1000)
 
       // Reinitialize for the next cycle
       statsQueue.clear()

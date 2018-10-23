@@ -17,6 +17,7 @@ class Block(
   private var _gasLimit: Float = 0,
   private var _gasUsed: Float = 0,
   private var _transactionList: mutable.ListBuffer[Transaction],
+  private var _ttl: Int=10,
   private var _timestamp: Long= 0) extends GuidExtension with Serializable {
 
   override def toString: String = {
@@ -39,6 +40,7 @@ class Block(
   def gasUsed = _gasUsed
   def transactionList= _transactionList
   def timestamp = _timestamp
+  def ttl = _ttl
 
 
   //Setter
@@ -54,4 +56,5 @@ class Block(
   def gasUsed_=(value:Float) = _gasUsed= value
   def transactionList_=(value: mutable.ListBuffer[Transaction]) = _transactionList
   def timestamp_=(value:Long) = _timestamp= value
+  def ttl_= (value: Int) = _ttl = value
 }

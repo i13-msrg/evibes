@@ -24,16 +24,16 @@ import scala.concurrent.duration._
 import scala.io.StdIn
 
 object Setting {
-  val bootNodes: Int = 5
-  val nodesNum: Int = 10
-  val txNum: Int = 100
+  val bootNodes: Int = 2
+  val nodesNum: Int = 1
+  val txNum: Int = 20
   val accountsNum: Int = 10
-  val bootAccNum: Int = 30
-  val txBatch: Int = 10
-  val blockGasLimit: Float = 50
-  val poolSize: Int = 10
-  val minConn: Int = 8
-  val maxConn: Int = 25
+  val bootAccNum: Int = 10
+  val txBatch: Int = 4
+  val blockGasLimit: Float = 10
+  val poolSize: Int = 100
+  val minConn: Int = 1
+  val maxConn: Int = 3
   val GenesisBlock: Block = new Block(_transactionList = new ListBuffer[Transaction])
   GenesisBlock.parentHash_=("0x0000000000000000000000000000000000000000000000000000000000000000")
   GenesisBlock.ommersHash_= ("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
@@ -51,7 +51,7 @@ object CustomJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
 }
 
 object StatsJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val statsJsonFormat = jsonFormat10(StatsJson)
+  implicit val statsJsonFormat = jsonFormat11(StatsJson)
 }
 
 object LocalStatsJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {

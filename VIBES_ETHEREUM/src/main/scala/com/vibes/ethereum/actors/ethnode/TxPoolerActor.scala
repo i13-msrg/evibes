@@ -5,7 +5,8 @@ import com.vibes.ethereum.models.Transaction
 import akka.event.Logging
 import com.vibes.ethereum.Setting
 import com.vibes.ethereum.actors.ethnode.AccountingActor.PoolerStarted
-
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
 
 
@@ -16,9 +17,13 @@ object TxPoolerActor {
 }
 
 class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Setting.type ,clientID: String) extends Actor{
-  accountingActor ! PoolerStarted
   import TxPoolerActor._
   import AccountingActor._
+  val log = Logging(context.system, this)
+  accountingActor ! PoolerStart
+  log.debug("Starting TxPoolerActor")
+  //println("Starting TxPoolerActor :" + this.clientID)
+  accountingActor ! PoolerStarted
 
   // Send more transactions than are allowed in blockGasLimit. As there might be some tx that might get rejected
   // This change is to speed up the execution.
@@ -26,17 +31,8 @@ class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Se
   private val poolSize: Int = setting.poolSize
   private val txPool = mutable.PriorityQueue.empty[Transaction](Ordering.by(txOrder))
   private var gasInPool: Float = 0
-  private var txList = new mutable.ListBuffer[Transaction]
   accountingActor ! PoolerInitialized
-
-  val log = Logging(context.system, this)
-  override def preStart(): Unit = {
-    log.debug("Starting TxPoolerActor")
-    println("Starting TxPoolerActor :" + this.clientID)
-    accountingActor ! PoolerStart
-  }
-
-
+  scheduleHeartbeatMsg()
 
   override def postStop(): Unit = {
       accountingActor ! PoolerStopped
@@ -52,25 +48,28 @@ class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Se
   def txOrder(tx: Transaction): Float = tx.gasPrice
 
   def handleTx(tx: Transaction) : Unit = {
-    println(f"Received Transaction ID:  $tx.id")
+    //println(f"Received Transaction ID:  $tx.id")
     if (txPool.length !=(poolSize)) {
       for(t <- txPool) {if(tx.equals(t)) return} //Don't add same tx twice
       txPool.enqueue(tx)
-      println(f"Added to the pool. Transaction ID: $tx.id")
+      //println(f"Added to the pool. Transaction ID: $tx.id")
       var size = txPool.length
 
-    println(f"Pool size : $size")
+    //println(f"Pool size : $size")
       gasInPool += tx.gasLimit
-    println(f"Gas in Pool : $gasInPool")
+    //println(f"Gas in Pool : $gasInPool")
     if (isGasLimitReached) {
-      processTxGroup()
+      // TODO: Change this to reflect real ethereaum PoW probability
+      if (scala.util.Random.nextInt(10)%3 == 0) {
+        processTxGroup()
+      }
     }
   } else {
     // If the pool is full drop the transaction
     // ref : https://medium.com/blockchannel/life-cycle-of-an-ethereum-transaction-e5c66bae0f6e
       accountingActor ! TxPoolFull
-      println("Transaction pool full")
-      println(f"Dropping Transaction ID: $tx.id")
+      //println("Transaction pool full")
+      //println(f"Dropping Transaction ID: $tx.id")
   }
 }
 
@@ -80,32 +79,40 @@ def isGasLimitReached: Boolean = {
 }
 
   def processTxGroup(): Boolean = {
+    var txList = new mutable.ListBuffer[Transaction]()
     if(isGasLimitReached) {
       var gasCount: Float = 0
-      println("GasLimit reached")
+      //println("GasLimit reached")
       // Dequeue all the transactions from the queue
-      // TODO: Change this to reflect real ethereaum PoW probability
-      if (scala.util.Random.nextInt(10) == 1) {
-        while (gasCount >= blockGasLimit) {
-          // Create a list of transactions
+
+      while (gasCount <= blockGasLimit) {
+        // Create a list of transactions
+        if(txPool.isEmpty == false) {
           var tx: Transaction = txPool.dequeue() //should we check empty dequeue ??
           gasCount += tx.gasLimit
           txList += tx
-          println(f"Added transaction to Block. ID: $tx.id")
-        }
-        println("Send the Transaction LIst to EVMPrimaryActor")
-        evmPrimary ! InternalBlockCreated(txList)
-        gasCount = 0
-        //A probability function that determines if the PoW is right. If False skip block creation
-        return true
+        } else {println("Pool is empty."); return false}
+        //println(f"Added transaction to Block. ID: $tx.id")
       }
-      else {return false}
+      println("Send the Transaction LIst to EVMPrimaryActor")
+      evmPrimary ! EvmPrimary.InternalBlockCreated(txList)
+        txPool.clear()
+      gasCount = 0
+      return true
     }
     else {return false}
   }
 
+  def scheduleHeartbeatMsg() = {
+    context.system.scheduler.schedule(60 second, 120 second, new Runnable {
+      override def run(): Unit = {
+      accountingActor ! PoolerHeartbeat(txPool.length, gasInPool)
+      }
+    })
+  }
+
   override def unhandled(message: Any): Unit = {
-    println("Message type not handled in TxPooler")
+    //println("Message type not handled in TxPooler")
   }
 }
 

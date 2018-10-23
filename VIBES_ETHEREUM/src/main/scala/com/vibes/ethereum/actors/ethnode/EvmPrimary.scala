@@ -13,7 +13,7 @@ import scala.util.Random
 
 
 object EvmPrimary {
-  case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction], parent: Block)
+  case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction])
   case class NewExtBlock(block: Block)
   case class InitializeGenesisBlock(block: Block)
 }
@@ -23,20 +23,18 @@ import com.vibes.ethereum.service.RedisManager
 import scala.collection.mutable.HashMap
 
 class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef, nodeActor: ActorRef) extends Actor{
+  val log = Logging(context.system, this)
+  accountingActor ! EvmStart
+  log.debug("Starting EvmPrimary")
+  println("Starting EvmPrimary : " + client.id)
   accountingActor ! EvmStarted
   var accountsAffected = new HashMap[String, Account]
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
   val miner: Account = client.account
   //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
-  var parentBlock: Block = new Block(_transactionList = new ListBuffer[Transaction]) // There will be a genesis block here
+  var parent: Block = new Block(_transactionList = new mutable.ListBuffer[Transaction]) // There will be a genesis block here
   accountingActor ! EvmInitialized
 
-
-  override def preStart(): Unit = {
-    log.debug("Starting EvmPrimary")
-    println("Starting EvmPrimary : " + client.id)
-    accountingActor ! EvmStart
-  }
 
   override def postStop(): Unit = {
     accountingActor ! EvmStopped
@@ -47,31 +45,33 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   import Node._
 
   override def receive: Receive = {
-    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction], parent: Block) => {accountingActor ! StartMining; blockCreate(txList, parent)}
+    case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => {accountingActor ! StartMining; blockCreate(txList)}
     case NewExtBlock(block: Block) => handleNewBlock(block)
     case InitializeGenesisBlock(block: Block) => initializeGenesisBlock(block)
     case _ => unhandled(message = AnyRef)
   }
 
-  val log = Logging(context.system, this)
-
 
 
   def initializeGenesisBlock(block: Block) = {
-    parentBlock = block
+    parent = block
   }
 
 
   def handleNewBlock(block: Block) = {
     accountingActor ! BlockVerificationStarted
-    var anscBlock = redis.getBlock(block.id)
+    var anscBlock = redis.getBlock(block.parentHash)
     anscBlock match {
-      case Some(anscBlock) => {blockCreate(block.transactionList, anscBlock)}
+      case Some(anscBlock) => {
+        parent = anscBlock
+        if (blockCreate(block.transactionList)) {accountingActor ! BlockVerified(System.currentTimeMillis() / 1000, parent)}
+      }
       case _ => {println("Invalid Block. DROPPING")}
     }
   }
 
-  def blockCreate(txList : mutable.ListBuffer[Transaction], parent: Block) = {
+  def blockCreate(txList : mutable.ListBuffer[Transaction]): Boolean = {
+    if(txList.isEmpty) {println("Empty tx list received"); return false}
     for(tx <- txList){
       if(redis.getTx(tx.id) == None) {
         executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
@@ -80,7 +80,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     // Add the items in local context in the DB
     //Add the updated sender and receiver in the database
     val block: Block = new Block(_transactionList = txList)
-
+    block.parentHash = parent.id
     block.gasLimit = calculateBlockGasLimit(parent.gasLimit)
     block.beneficiary = miner.address
     block.gasUsed = getGasUsed()
@@ -111,10 +111,12 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     //TODO: Update other fields in the block
     redis.putBlock(block)
     println("Block Created Successfully")
-    parentBlock = block
+    accountingActor ! BlockGenerated(System.currentTimeMillis() / 1000, parent)
+    parent = block
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
     nodeActor ! PropogateToNeighbours(block)
+    return true
   }
 
 
@@ -130,7 +132,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   }
 
   def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float): Any ={
-    val sender = getLocalAccount(tx.sender).get
+    val sender = getLocalAccount(tx.sender).getOrElse(default = return )
     if (!sender.isInstanceOf[Account]) {println("Sender Or receiver are new. Skipping tx"); return}
     if(isValidTx(sender, tx, blockGasLimit)) {
       /*

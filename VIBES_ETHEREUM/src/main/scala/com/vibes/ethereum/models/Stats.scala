@@ -5,8 +5,8 @@ import com.vibes.ethereum.helpers.GuidExtension
 
 @SerialVersionUID(123L)
 case class Stats(
-   private var _blockNum : Int = 0,
-   private var _timestamp : Long = 0,
+   private var _blockNum : Int = 1,
+   private var _timestamp : Long = 0L,
    private var _blockTime : Double = 0,
    private var _avgBlockTime : Double = 0,
    private var _difficulty : Double = 0,
@@ -59,32 +59,38 @@ case class Stats(
 
 
   //Setter
-  def blockNum_= (value : Int): Int = blockNum = value
-  def timestamp_= (value: Long)=_timestamp = value
-  def blockTime_= (value: Double)=_blockTime = value
-  def avgBlockTime_= (value: Double): Double= avgBlockTime= value
-  def difficulty_= (value: Double) = _difficulty = value
-  def avgDifficulty_= (value: Double) =  _avgDifficulty = value
-  def txCost_= (value: Double) =  _txCost = value
-  def avgTxCost_= (value: Double) = _avgTxCost = value
-  def gasSpending_= (value: Double) = _gasSpending = value
-  def avgGasSpending_= (value: Double) = _avgGasSpending = value
-  def gasLimit_= (value: Double) = _gasLimit = value
-  def avgGasLimit_= (value: Double) = _avgGasLimit = value
-  def uncleCount_= (value: Double) = _uncleCount = value
-  def avgUncleCount_= (value: Double) = _avgUncleCount = value
-  def peers_= (value: Double) = _peers = value
-  def avgPeers_= (value: Double) = _avgPeers = value
-  def pendingTx_= (value: Double) = _pendingTx = value
-  def avgPendingTx_= (value: Double) = _avgPendingTx = value
-  def propTime_= (value: Long) = _propTime = value
-  def avgPropTime_= (value: Long) = _avgPropTime = value
-  def poolGasAcc_= (value: Double) = _poolGasAcc = value
+  def blockNum_= (value : Int): Unit = _blockNum = value
+  def timestamp_= (value: Long): Unit = _timestamp = value
+  def blockTime_= (value: Double): Unit=_blockTime = value
+  def avgBlockTime_= (value: Double): Unit= _avgBlockTime = value
+  def difficulty_= (value: Double): Unit = _difficulty = value
+  def avgDifficulty_= (value: Double): Unit =  _avgDifficulty = value
+  def txCost_= (value: Double): Unit =  _txCost = value
+  def avgTxCost_= (value: Double): Unit = _avgTxCost = value
+  def gasSpending_= (value: Double): Unit = _gasSpending = value
+  def avgGasSpending_= (value: Double): Unit = _avgGasSpending = value
+  def gasLimit_= (value: Double): Unit = _gasLimit = value
+  def avgGasLimit_= (value: Double): Unit = _avgGasLimit = value
+  def uncleCount_= (value: Double): Unit = _uncleCount = value
+  def avgUncleCount_= (value: Double): Unit = _avgUncleCount = value
+  def peers_= (value: Double): Unit = _peers = value
+  def avgPeers_= (value: Double): Unit = _avgPeers = value
+  def pendingTx_= (value: Double): Unit = _pendingTx = value
+  def avgPendingTx_= (value: Double): Unit = _avgPendingTx = value
+  def propTime_= (value: Long): Unit = _propTime = value
+  def avgPropTime_= (value: Long) : Unit= _avgPropTime = value
+  def poolGasAcc_= (value: Double): Unit = _poolGasAcc = value
 
 
   //Utility function: Running average calculation
   def calcAvg(n: Int, oldAvg:Double, newVal:Double): Double = {
-    val avg = (oldAvg + newVal)/n
-    return avg
+    try {
+      val avg = (oldAvg + newVal)/n
+      return avg
+    }
+    catch {
+      case e => {println("Exception Occoured"); return 0}
+    }
+
   }
 }

@@ -9,6 +9,7 @@ class Transaction(
   private var _gasLimit: Float= 10,
   private var _receiver: String,
   private var _value: Float = 5,
+  private var _ttl: Int=10,
   private var _sender: String) extends GuidExtension with Serializable {
 
   private val _id: String = generateGUID()
@@ -29,6 +30,7 @@ class Transaction(
   def receiver = _receiver
   def value = _value
   def sender = _sender
+  def ttl = _ttl
 
 
   //Setter
@@ -38,5 +40,6 @@ class Transaction(
   def receiver_= (value:String) = _receiver = value
   def value_= (value:Float) = _value = value
   def sender_= (value:String) = _sender = value
+  def ttl_= (value: Int) = _ttl = value
 
 }

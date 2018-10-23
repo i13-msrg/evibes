@@ -10,8 +10,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /*background-color: #3c4852;*/
-  background-color: #f2f2f2;
+  background-color: #3c4852;
+  /*background-color: #f2f2f2;*/
 }
 
 code {
@@ -19,9 +19,3 @@ code {
     monospace;
 }
 
-.FixedControl {
-  position: fixed;
-  bottom: 5%;
-  right: 25%;
-  width: 800px;
-}
