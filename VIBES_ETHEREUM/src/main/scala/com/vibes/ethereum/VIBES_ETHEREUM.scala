@@ -25,7 +25,7 @@ import scala.io.StdIn
 
 object Setting {
   val bootNodes: Int = 2
-  val nodesNum: Int = 1
+  val nodesNum: Int = 10
   val txNum: Int = 20
   val accountsNum: Int = 10
   val bootAccNum: Int = 10

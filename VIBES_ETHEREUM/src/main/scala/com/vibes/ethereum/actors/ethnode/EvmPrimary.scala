@@ -15,7 +15,7 @@ import scala.util.Random
 object EvmPrimary {
   case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction])
   case class NewExtBlock(block: Block)
-  case class InitializeGenesisBlock(block: Block)
+  case class InitializeParentBlock(block: Block)
 }
 
 import scala.collection.mutable
@@ -46,49 +46,34 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
 
   override def receive: Receive = {
     case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => {accountingActor ! StartMining; blockCreate(txList)}
-    case NewExtBlock(block: Block) => handleNewBlock(block)
-    case InitializeGenesisBlock(block: Block) => initializeGenesisBlock(block)
+    case NewExtBlock(block: Block) => blockVerify(block)
+    case InitializeParentBlock(block: Block) => initializeBlock(block)
     case _ => unhandled(message = AnyRef)
   }
 
 
-
-  def initializeGenesisBlock(block: Block) = {
+  def initializeBlock(block: Block) = {
     parent = block
   }
 
 
-  def handleNewBlock(block: Block) = {
+  def blockVerify(block: Block) = {
     accountingActor ! BlockVerificationStarted
     var anscBlock = redis.getBlock(block.parentHash)
+    var propTime = ((System.currentTimeMillis() / 1000) - block.timestamp)
+    var startTime = System.currentTimeMillis() / 1000
     anscBlock match {
       case Some(anscBlock) => {
         parent = anscBlock
-        if (blockCreate(block.transactionList)) {accountingActor ! BlockVerified(System.currentTimeMillis() / 1000, parent)}
+        if (blockComputation(block)) {accountingActor ! BlockVerified(startTime, parent, propTime)}
       }
       case _ => {println("Invalid Block. DROPPING")}
     }
   }
 
-  def blockCreate(txList : mutable.ListBuffer[Transaction]): Boolean = {
-    if(txList.isEmpty) {println("Empty tx list received"); return false}
-    for(tx <- txList){
-      if(redis.getTx(tx.id) == None) {
-        executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
-      }
-    }
-    // Add the items in local context in the DB
-    //Add the updated sender and receiver in the database
-    val block: Block = new Block(_transactionList = txList)
-    block.parentHash = parent.id
-    block.gasLimit = calculateBlockGasLimit(parent.gasLimit)
-    block.beneficiary = miner.address
-    block.gasUsed = getGasUsed()
-    block.number = getBlockNumber(parent.number)
-    block.timestamp = System.currentTimeMillis() / 1000
-    block.difficulty = calculateDifficulty(block.number, parent.difficulty, block.timestamp, parent.timestamp)
-    block.transactionList = txList
-
+  def blockComputation(block: Block): Boolean = {
+    val starttime = System.currentTimeMillis() / 1000
+    val txList = block.transactionList
     for(key <- accountsAffected.keysIterator) {
       redis.putAccount(accountsAffected.get(key).get)
       println("Account added in the Block")
@@ -109,9 +94,10 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       txListLocalContext.remove(key)
     }
     //TODO: Update other fields in the block
+    block.timestamp = System.currentTimeMillis() / 1000
     redis.putBlock(block)
     println("Block Created Successfully")
-    accountingActor ! BlockGenerated(System.currentTimeMillis() / 1000, parent)
+    accountingActor ! BlockGenerated(block.timestamp - starttime, block)
     parent = block
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
@@ -120,21 +106,45 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   }
 
 
-  def getLocalAccount(acc: String):Option[Account]=  {
-    val accLocal = accountsAffected.get(acc)
-    if(accLocal == None) {
-      //Not in local context
-      val accDb = redis.getAccount(acc)
-      if (accDb == None) {return None}
-      else {return accDb}
+  def blockCreate(txList : mutable.ListBuffer[Transaction]): Boolean = {
+    if (txList.isEmpty) {
+      println("Empty tx list received"); return false
     }
-    else return accLocal
+    for (tx <- txList) {
+      if (redis.getTx(tx.id) == None) {
+        executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
+      }
+    }
+    // Add the items in local context in the DB
+    //Add the updated sender and receiver in the database
+    val block: Block = new Block(_transactionList = txList)
+    block.parentHash = parent.id
+    block.gasLimit = calculateBlockGasLimit(parent.gasLimit)
+    block.beneficiary = miner.address
+    block.gasUsed = getGasUsed()
+    block.number = getBlockNumber(parent.number)
+    block.difficulty = calculateDifficulty(block.number, parent.difficulty, block.timestamp, parent.timestamp)
+    block.transactionList = txList
+    blockComputation(block)
   }
 
-  def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float): Any ={
+
+  def getOrElseAccount(acc: String, default: Any): Any = {
+    var ac = accountsAffected.getOrElse(acc, None)
+    if(ac == None) {
+      //Not in local context
+      ac = redis.getAccount(acc).getOrElse(acc, None)
+      if (ac == None) {return default}
+      else {return ac}
+    }
+    else return ac
+  }
+
+  def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float): Boolean ={
+    /*
     val sender = getLocalAccount(tx.sender).getOrElse(default = return )
     if (!sender.isInstanceOf[Account]) {println("Sender Or receiver are new. Skipping tx"); return}
-    if(isValidTx(sender, tx, blockGasLimit)) {
+    */
       /*
       * 1. Reduce TgTp from Sender balance
       * 2. Increment nonce of sender by 1
@@ -156,40 +166,64 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       *
       * */
 
-      sender.balance -= tx.gasLimit*tx.gasPrice
-      sender.nonce += 1
-      val gasRemaining = tx.gasLimit - getGasUsed()
-      //Here call EVM secondary for contracts
-      // Send a request to estimate gas reqd(g') if contracts
+      // New accounts
+      //val sender = getAccount(tx.sender).getOrElse(default = return false)
+      //val receiver = getAccount(tx.receiver).getOrElse(default = return false)
 
-      //For transfer transactions gasRemaining is same (g == g')
-      // Ar = 0 in our case... No SSTORE at this moment
-      var gasRefund = gasRemaining
-      val gasRefund_1 = ((tx.gasLimit - gasRemaining)/2).floor
-      if (gasRefund_1 < 0) gasRefund += gasRefund_1 else gasRefund +=0
-      sender.balance += (gasRefund * tx.gasPrice)
-      miner.balance += (tx.gasLimit - gasRefund)*tx.gasPrice
+    val senderAny = getOrElseAccount(tx.sender, None)
+    val receiverAny = getOrElseAccount(tx.receiver, None)
 
-      accountsAffected.put(sender.address, sender)
-      accountsAffected.put(miner.address, miner)
+    if(senderAny.isInstanceOf[Account] & receiverAny.isInstanceOf[Account]) {
+      val sender = senderAny.asInstanceOf[Account]
+      val receiver = receiverAny.asInstanceOf[Account]
 
-      val accAffected = new HashMap[String, Float]
-      accAffected.put(sender.address, sender.balance)
-      accAffected.put(miner.address, miner.balance)
-      txListLocalContext.put(tx.id, accAffected)
-      println(f"Transaction $tx executed successfully")
+      if (isValidTx(sender, tx, blockGasLimit)) {
+        sender.balance -= tx.gasLimit * tx.gasPrice
+        sender.nonce += 1
+        val gasRemaining = tx.gasLimit - getGasUsed()
+        //Here call EVM secondary for contracts
+        // Send a request to estimate gas reqd(g') if contracts
+
+        //For transfer transactions gasRemaining is same (g == g')
+        // Ar = 0 in our case... No SSTORE at this moment
+        var gasRefund = gasRemaining
+        val gasRefund_1 = ((tx.gasLimit - gasRemaining) / 2).floor
+        if (gasRefund_1 < 0) gasRefund += gasRefund_1 else gasRefund += 0
+        sender.balance += (gasRefund * tx.gasPrice)
+        miner.balance += (tx.gasLimit - gasRefund) * tx.gasPrice
+
+        //Transaction value transfer
+        sender.balance -= tx.value
+        receiver.balance += tx.value
+
+        accountsAffected.put(sender.address, sender)
+        accountsAffected.put(receiver.address, receiver)
+        accountsAffected.put(miner.address, miner)
+
+        val accAffected = new HashMap[String, Float]
+        accAffected.put(sender.address, sender.balance)
+        accAffected.put(receiver.address, receiver.balance)
+        accAffected.put(miner.address, miner.balance)
+        txListLocalContext.put(tx.id, accAffected)
+        println(f"Transaction $tx executed successfully")
+      }
+      else {
+        //Send the transaction to the tx pool for executing it later, when the conditions are met
+        context.sender ! AddTxToPool(tx)
+      }
+      return true
     }
-    else {
-      //Send the transaction to the tx pool for executing it later, when the conditions are met
-      context.sender ! AddTxToPool(tx)
-    }
-
+    return false
   }
 
   def isValidTx(sender: Account, tx: Transaction, blockGasLimit: Float): Boolean = {
     val g0 = getGasUsed()
     val v0 = calculateUpfrontCost(tx) //Upfront cost
 
+    //Handling the case for new transactions
+    if (tx.nonce == 0) {
+      tx.nonce_= (sender.nonce)
+    }
     if ((sender.nonce != 0) && (tx.nonce == sender.nonce) && (g0 <= tx.gasLimit)
       && (v0 <= sender.balance) && (tx.gasLimit <= (blockGasLimit - g0))) return true else return false
   }
@@ -205,7 +239,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
 
 
   def calculateDifficulty(blockNumber: Long, parentDifficulty: Double, currTimestamp: Long, parentTimestamp: Long): Long = {
-    val homesteadBlock = 150000
+    val homesteadBlock = 10
     val D0 = 131072L
     val epsilon = scala.math.pow(2,((blockNumber/100000).floor -2)).floor
     val x = (parentDifficulty/2048)

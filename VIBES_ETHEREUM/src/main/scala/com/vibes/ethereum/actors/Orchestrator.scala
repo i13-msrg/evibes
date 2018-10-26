@@ -74,7 +74,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
 
   def scheduleTxCreation(settings: Setting.type, accounts: ListBuffer[Account], nodeMap: mutable.HashMap[String, ActorRef]): Cancellable = {
     var nodeKeys = nodeMap.keys.toList
-    context.system.scheduler.schedule(30 second, 10 second, new Runnable {
+    context.system.scheduler.schedule(10 second, 10 second, new Runnable {
       override def run(): Unit = {
         println("################CYCLE START##############")
         val txList = createTransactions(settings.txBatch, accounts)
@@ -89,7 +89,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
 
   def createNode(nodeType: String, reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type): Tuple2[String, ActorRef] = {
     val client = new Client(nodeType, _lat = "10E20W", _lon = "20N5S")
-    val accountingActor: ActorRef = context.actorOf(Props(new AccountingActor(client.id, eventQueue, reducer)))
+    val accountingActor: ActorRef = context.actorOf(Props(new AccountingActor(client, eventQueue, reducer)))
     Thread.sleep(5000)
     var nodeActor = context.system.actorOf(Props(new Node(client, reducer, accountingActor, None, setting)), nodeType + "_" + client.id)
     new Tuple2[String, ActorRef](client.id, nodeActor)
@@ -161,6 +161,9 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
     for (i <- 1 to count) {
       val accounts = Random.shuffle(accList).take(2)
       txList += new Transaction(_sender = accounts(0).address, _receiver = accounts(1).address)
+      accounts(0).nonce += 1
+      accounts(1).nonce += 1
+
     }
     return txList
   }

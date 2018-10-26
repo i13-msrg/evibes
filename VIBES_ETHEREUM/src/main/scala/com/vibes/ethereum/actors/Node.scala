@@ -21,7 +21,7 @@ object Node {
   case class InitializeFullNode(bootNode: ActorRef)
   case class InitializeBootNode(accList: ListBuffer[Account])
   case class BlockchainCopyRequest()
-  case class BlockchainCopyResponse(accountList: ListBuffer[Account])
+  case class BlockchainCopyResponse(accountList: ListBuffer[Account], blocks: ListBuffer[Option[Block]])
   case class CreateAccount(account: Account)
 
   case class PropogateToNeighbours(block: Block)
@@ -39,7 +39,6 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   log.debug("Starting Node")
   //println("Starting Node : " + client.id)
   accountingActor ! NodeStarted
-
   var btNode = bootNode
   val redis: RedisManager = new RedisManager(client.id)
   val evmPrimaryActor: ActorRef = context.actorOf(Props(new EvmPrimary(client, redis, accountingActor, context.self)))
@@ -64,6 +63,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
         neighbourMap.put(key, neighbours.get(key).get)
         neighbourStatus.put(key, true)
         accountingActor ! NeighbourUpdate(nodeList.length)
+        accountingActor ! NodeType
       }
     }
   }
@@ -88,6 +88,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
           btNode.get ! NeighbourCopyRequest(client.id)
         }
         accountingActor ! NodeInitialized
+
       }
     })
   }
@@ -99,7 +100,13 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
 
   override def receive: Receive = {
     case NewTx(tx) => {txPoolerActor ! AddTxToPool(tx); propogateToNeighboursTx(tx)}
-    case NewBlock(block: Block) => {evmPrimaryActor ! NewExtBlock(block)}
+    case NewBlock(block: Block) => {
+      //compute proptime
+      var startTime = System.currentTimeMillis() / 1000
+      var propTime = (startTime - block.timestamp)
+      evmPrimaryActor ! NewExtBlock(block)
+      accountingActor ! BlockReceived(propTime)
+    }
     case CreateAccount(account: Account) => createAccount(account)
     case PropogateToNeighbours(block: Block) => propogateToNeighbours(block)
 
@@ -116,7 +123,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     case InitializeBootNode(accList: ListBuffer[Account]) => initializeBootNode(accList)
     case InitializeFullNode(bootNode: ActorRef) => initializeFullNode(bootNode)
     case BlockchainCopyRequest() => copyRequest()
-    case BlockchainCopyResponse(accountList: ListBuffer[Account]) => blockchainResponse(accountList)
+    case BlockchainCopyResponse(accountList: ListBuffer[Account], blocks: ListBuffer[Option[Block]]) => blockchainResponse(accountList, blocks)
     case _ => unhandled(message = AnyRef)
   }
 
@@ -172,7 +179,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     for (acc <- accList) {
       createAccount(acc)
     }
-    evmPrimaryActor ! InitializeGenesisBlock(setting.GenesisBlock)
+    evmPrimaryActor ! InitializeParentBlock(setting.GenesisBlock)
   }
 
 
@@ -185,15 +192,19 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     for (accId <- accountList) {
       accountDetailsList += redis.getAccount(accId).get
     }
-    sender ! BlockchainCopyResponse(accountDetailsList)
+    val blocks = redis.getAllBlocks()
+    sender ! BlockchainCopyResponse(accountDetailsList, blocks)
   }
 
-  def blockchainResponse(accList: ListBuffer[Account]) = {
+  def blockchainResponse(accList: ListBuffer[Account], blocks: ListBuffer[Option[Block]]) = {
     //Update the node state to : Copying the blockchain
-    for (acc<- accList) {
-      redis.putAccount(acc)
-      accountList += acc.address
-    }
+    var latestBlock = new Block(_transactionList = new ListBuffer[Transaction])
+    latestBlock.timestamp_=(0L)
+
+    accList.foreach(acc => {redis.putAccount(acc); accountList += acc.address})
+    blocks.foreach(opBlock => opBlock.foreach(block => {redis.putBlock(block);
+      if (block.timestamp > latestBlock.timestamp) {latestBlock = block}}))
+    evmPrimaryActor ! InitializeParentBlock(latestBlock)
   }
 
   def createAccount(account: Account) = {

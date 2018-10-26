@@ -7,6 +7,8 @@ import java.io._
 import java.util.Base64
 import java.nio.charset.StandardCharsets.UTF_8
 
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 
@@ -64,6 +66,23 @@ class RedisManager(
     val block = redis.get(blockId)
     if (block == None) {return None}
     else {return Try(deserialise(block.toString).asInstanceOf[Block]).toOption}
+  }
+
+  def getAllBlocks(): ListBuffer[Option[Block]] = {
+    val key = clientID + "-BLOCK-*"
+    var cursor = 0
+    var result = new ListBuffer[Option[Block]]
+    var blockList = new mutable.ListBuffer[String]
+    do {
+      var result: Option[(Option[Int], Option[List[Option[String]]])] = redis.scan(cursor, key,10)
+      blockList.++(result.get._2.get)
+      cursor = result.get._1.get
+    } while(cursor != 0)
+
+    for (key <- blockList) {
+      result += getBlock(key)
+    }
+    result
   }
 
   def putBlock(block: Block) : Option[String] = {

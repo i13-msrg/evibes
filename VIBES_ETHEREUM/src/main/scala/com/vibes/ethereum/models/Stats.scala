@@ -1,7 +1,7 @@
 package com.vibes.ethereum.models
 
 import com.vibes.ethereum.helpers.GuidExtension
-
+import scala.math.{abs, max}
 
 @SerialVersionUID(123L)
 case class Stats(
@@ -25,6 +25,7 @@ case class Stats(
    private var _avgPendingTx : Double = 0,
    private var _poolGasAcc : Double = 0,
    private var _propTime : Long = 0,
+   private var _nodeType : String = "",
    private var _avgPropTime : Long = 0) extends GuidExtension with Serializable {
 
   override def toString: String = {
@@ -55,6 +56,7 @@ case class Stats(
   def avgPendingTx = _avgPendingTx
   def propTime = _propTime
   def avgPropTime = _avgPropTime
+  def nodeType : String = _nodeType
   def poolGasAcc = _poolGasAcc
 
 
@@ -79,6 +81,7 @@ case class Stats(
   def avgPendingTx_= (value: Double): Unit = _avgPendingTx = value
   def propTime_= (value: Long): Unit = _propTime = value
   def avgPropTime_= (value: Long) : Unit= _avgPropTime = value
+  def nodeType_= (value: String) : Unit = _nodeType = value
   def poolGasAcc_= (value: Double): Unit = _poolGasAcc = value
 
 
@@ -86,7 +89,7 @@ case class Stats(
   def calcAvg(n: Int, oldAvg:Double, newVal:Double): Double = {
     try {
       val avg = (oldAvg + newVal)/n
-      return avg
+      return abs(avg)
     }
     catch {
       case e => {println("Exception Occoured"); return 0}

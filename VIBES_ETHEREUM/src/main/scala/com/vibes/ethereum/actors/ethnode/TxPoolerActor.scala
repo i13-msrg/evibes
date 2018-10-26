@@ -104,7 +104,7 @@ def isGasLimitReached: Boolean = {
   }
 
   def scheduleHeartbeatMsg() = {
-    context.system.scheduler.schedule(60 second, 120 second, new Runnable {
+    context.system.scheduler.schedule(10 second, 15 second, new Runnable {
       override def run(): Unit = {
       accountingActor ! PoolerHeartbeat(txPool.length, gasInPool)
       }

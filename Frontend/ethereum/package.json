@@ -5,8 +5,12 @@
   "dependencies": {
     "@blueprintjs/core": "^3.6.1",
     "@blueprintjs/table": "^3.2.0",
+    "ag-grid": "^18.1.2",
+    "ag-grid-community": "^19.0.0",
+    "ag-grid-react": "^19.0.0",
     "react": "^16.5.2",
     "react-dom": "^16.5.2",
+    "react-dom-factories": "^1.0.2",
     "react-scripts": "2.0.4",
     "react-simple-maps": "^0.12.1"
   },

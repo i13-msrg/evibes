@@ -1,9 +1,10 @@
+
 import React, { Component } from 'react';
 import './App.css';
 
 import StatsCardContainer from './components/StatsCardContainer';
 import GraphCardContainer from './components/GraphCardContainer';
-import NodeTable from './components/NodeTable'
+import AgTable from './components/AgTable'
 import Controls from './components/Controls'
 import update from 'immutability-helper';
 import 'react-table/react-table.css'
@@ -39,13 +40,13 @@ class App extends Component {
 
         this.globalEventSource = new EventSource('http://localhost:8080/global-events');
         //this.localEventSource = new EventSource('http://localhost:8080/local-events');
-        this.stateEventSource = new EventSource('http://localhost:8080/state-events');
+        //this.stateEventSource = new EventSource('http://localhost:8080/state-events');
     }
 
     componentDidMount() {
         this.globalEventSource.onmessage = (e) => this.globalEventData(e.data);
         //this.localEventSource.onmessage = (e) => this.localEventData(e.data);
-        this.stateEventSource.onmessage = (e) => this.stateEventData(e.data);
+        //this.stateEventSource.onmessage = (e) => this.stateEventData(e.data);
     }
 
     globalEventData(nodeState) {
@@ -80,7 +81,7 @@ class App extends Component {
         let pos = -1
         try{
           state = JSON.parse(nodeState)
-          //console.log(nodeState)
+          console.log(nodeState)
           //console.log(this.state.data)
           temp["id"] = state["id"]
           temp[state["attr"]] = state["value"]
@@ -110,7 +111,6 @@ class App extends Component {
                 data: update(this.state.data, {[pos]: {$set: nodeTemp}})
               })
             }
-            
           }
         //console.log(this.state.data) 
         } catch(e) {console.log(e)}
@@ -118,18 +118,28 @@ class App extends Component {
 
     localEventData(nodeState) {
         let state = {}
+        let pos = -1
+
         try{
           state = JSON.parse(nodeState)
-          let payload = {"id": state.clientId, "attr": "", "value":0}
-          for (var attr in state) {
-              if(attr !== "clientId") {
-                payload["attr"] = attr
-                payload["value"] = state[attr]
-                this.stateEventData(JSON.stringify(payload))
-              } 
+          var id = state["clientId"]
+          delete state["clientId"]
+          state["id"] = id
+          if(state["id"] in this.state.map) {
+            pos = this.state.map[state["id"]]
           }
-        }
-        catch{console.log("empty data packet for local stats")}
+          if(pos === -1) {
+            this.setState({data: this.state.data.concat(state)})
+            let mapTemp = Object.assign({}, this.state.map)
+            mapTemp[state["id"]] = this.state.data.length -1 
+            this.setState({map: mapTemp})
+          } else {
+            var temp = Object.assign({}, this.state.data[pos], state)
+            this.setState({
+                data: update(this.state.data, {[pos]: {$set: temp}})
+                })
+            }
+        } catch{console.log("empty data packet for local stats")}
     }
 
     render() {
@@ -140,7 +150,9 @@ class App extends Component {
                     <StatsCardContainer global_data={this.state.global_data}/>
                     <br></br>
                     <GraphCardContainer graph_data={this.state.graph_data}/>
-                    <NodeTable state_data={this.state.data}/>
+                    <div className="tableClass">
+                        <AgTable state_data={this.state.data}/>
+                    </div>
                     <div className="FixedControl">
                         <Controls/>
                     </div>
