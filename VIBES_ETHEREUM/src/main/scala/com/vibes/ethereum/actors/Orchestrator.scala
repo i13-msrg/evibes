@@ -3,6 +3,7 @@ package com.vibes.ethereum.actors
 import akka.event.Logging
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.util.Timeout
 import com.vibes.ethereum.models.{Account, Client, Transaction}
 import com.vibes.ethereum.Setting
 import com.vibes.ethereum.actors.ethnode.{AccountingActor, EventJson}
@@ -15,6 +16,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object Orchestrator {
   case class StartSimulation(settings: Setting.type )
+  case class CreateBootNodes(settings:Setting.type, reducer:ActorRef)
+  case class CreateFullNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
+                             bootNodeMap: mutable.HashMap[String, ActorRef])
+  case class CreateAccounts(accNum: Int, nodesMap: mutable.HashMap[String, ActorRef])
 }
 
 // TODO : How to stop the orchestrator. When is the simulation complete
@@ -36,40 +41,43 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
     case StartSimulation(settings) => startSimulation(settings)
   }
 
+  def startNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
+                 bootNodeMap: mutable.HashMap[String, ActorRef]): mutable.HashMap[String, ActorRef] = {
+    println("IN STARTNODE")
+    for (i <- 0 until noOfNodes) {
+      println("Creationg Node " + i.toString())
+      val nodetp = createNode("FULLNODE", reducer, eventQueue, setting)
+      nodesMap.put(nodetp._1, nodetp._2)
+      val bootNodeKeys = bootNodeMap.keys.toList
+      //Pick one bootbode at random
+      val indx = Random.nextInt(bootNodeKeys.length)
+      nodetp._2 ! InitializeFullNode(bootNodeMap.get(bootNodeKeys(indx)).get)
+    }
+    nodesMap
+  }
 
-  def startSimulation(settings: Setting.type): Cancellable = {
+
+  def startSimulation(settings: Setting.type) = {
     val reducer = context.system.actorOf(Props(new Reducer(globalStatsQueue, localStatsQueue)), "reducer")
     val bootNodes = initializeSimilator(settings, reducer)
-    val fullNodes = startNodes(settings.nodesNum, new mutable.HashMap[String, ActorRef], reducer, eventQueue, settings, bootNodes)
-
-    // Create initial number of accounts
-    val accounts = createAccountsInNode(settings.accountsNum, fullNodes)
-    scheduleTxCreation(settings, accounts, fullNodes)
+    val allNodes = startNodes(settings.nodesNum, bootNodes, reducer, eventQueue, settings, bootNodes)
+    Thread.sleep(5000)
+    val accounts = createAccountsInNode(settings.accountsNum, allNodes)
+    //scheduleTxCreation(settings, accounts, allNodes)
   }
 
 
   def initializeSimilator(settings: Setting.type, reducer: ActorRef): mutable.HashMap[String, ActorRef] = {
     println("Boot node initialization started")
     val bootNodes = createBootNodes(settings, reducer, eventQueue)
-    Thread.sleep(10000)
+    Thread.sleep(1000)
     addBootNodeNeighbours(bootNodes, settings.minConn, settings.maxConn)
+    println("Boot node initialization ended")
     bootNodes
   }
 
 
-  def startNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef,
-                 eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
-                 bootNodeMap: mutable.HashMap[String, ActorRef]): mutable.HashMap[String, ActorRef] = {
 
-    for (i <- 0 until noOfNodes) {
-      val nodetp = createNode("FULLNODE", reducer, eventQueue, setting)
-      nodesMap.put(nodetp._1, nodetp._2)
-      val bootNodeKeys = bootNodeMap.keys.toList
-      val indx = Random.nextInt(bootNodeKeys.length)
-      nodetp._2 ! InitializeFullNode(bootNodeMap.get(bootNodeKeys(indx)).get)
-    }
-    nodesMap
-  }
 
 
   def scheduleTxCreation(settings: Setting.type, accounts: ListBuffer[Account], nodeMap: mutable.HashMap[String, ActorRef]): Cancellable = {
@@ -90,7 +98,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
   def createNode(nodeType: String, reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type): Tuple2[String, ActorRef] = {
     val client = new Client(nodeType, _lat = "10E20W", _lon = "20N5S")
     val accountingActor: ActorRef = context.actorOf(Props(new AccountingActor(client, eventQueue, reducer)))
-    Thread.sleep(5000)
+    Thread.sleep(1000)
     var nodeActor = context.system.actorOf(Props(new Node(client, reducer, accountingActor, None, setting)), nodeType + "_" + client.id)
     new Tuple2[String, ActorRef](client.id, nodeActor)
   }
@@ -99,7 +107,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
   def createBootNodes(setting: Setting.type, reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson]): mutable.HashMap[String, ActorRef] = {
     val nodeMap = new mutable.HashMap[String, ActorRef]
     val genesisAccList = getGenesisAccountsList(setting.bootAccNum)
-    for (i <- 1 to setting.bootNodes) {
+    for (i <- 0 until setting.bootNodes) {
       val nodetp = createNode("BOOTNODE", reducer, eventQueue, setting)
       nodeMap.put(nodetp._1, nodetp._2)
       nodetp._2 ! InitializeBootNode(genesisAccList)
@@ -131,7 +139,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
   def createAccountsInNode(count: Int, nodeMap: mutable.HashMap[String, ActorRef]): ListBuffer[Account] = {
     var accounts = new ListBuffer[Account]()
     var nodeKeys = nodeMap.keys.toList
-    for (i <- 0 to count) {
+    for (i <- 0 until count) {
       var key = nodeKeys(Random.nextInt(nodeKeys.length))
       val acc = new Account(_creatorId = key)
       accounts += acc

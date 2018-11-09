@@ -16,9 +16,8 @@ class RedisManager(
    private val clientID: String) {
 
   private val redis: RedisClient = new RedisClient("localhost", 6379)
-
   def getClient(id: String) : Option[Client] ={
-    val client = redis.get("CLIENT-" + id)
+    val client = redis.get("CLIENT-" + id).get
     if(client == None) {return None}
     else {return Try(deserialise(client.toString).asInstanceOf[Client]).toOption}
   }
@@ -31,7 +30,7 @@ class RedisManager(
   }
 
   def getTx(txId: String) : Option[Transaction] = {
-    val tx = redis.get(clientID + "-TX-" + txId)
+    val tx = redis.get(clientID + "-TX-" + txId).get
     if(tx == None) {return None}
     else {return Try(deserialise(tx.toString).asInstanceOf[Transaction]).toOption}
   }
@@ -46,7 +45,7 @@ class RedisManager(
 
   // UPDATED
   def getAccount(accAddr: String, blockId: String) : Option[Account] = {
-    val acc = redis.get(clientID + "-" + blockId + "-ACC-" + accAddr)
+    val acc = redis.get(clientID + "-" + blockId + "-ACC-" + accAddr).get
     if(acc == None) {return None}
     else {return Try(deserialise(acc.toString).asInstanceOf[Account]).toOption}
   }
@@ -88,10 +87,10 @@ class RedisManager(
   // Deviation from the standard Redis client implementation for simplification
   def getWorldState(blockId: String, clientId: String): mutable.HashMap[String, Account] = {
     val key = clientId + "-WORLD-" + blockId
-    val accKeyList = redis.lrange(key, 0, -1)
+    val accKeyList= redis.lrange(key, 0, -1).get
     var accMap = new mutable.HashMap[String, Account]
     for (acKey <- accKeyList) {
-      val account = deserialise(redis.get(acKey).get).asInstanceOf[Account]
+      val account = deserialise(redis.get(acKey.get).get).asInstanceOf[Account]
       accMap.put(account.address, account)
     }
     accMap
@@ -115,30 +114,43 @@ class RedisManager(
   }
 
   def getBlock(blockId: String) : Option[Block] = {
-    val block = redis.get(blockId)
+    val key = clientID + "-BLOCK-" + blockId
+    val block = redis.get(key).get
     if (block == None) {return None}
     else {return Try(deserialise(block.toString).asInstanceOf[Block]).toOption}
   }
 
-  def getAllBlocks(): ListBuffer[Option[Block]] = {
+  def getBlockByKey(key: String): Option[Block] = {
+    val block = redis.get(key).get
+    if (block == None) {return None}
+    else {return Try(deserialise(block.toString).asInstanceOf[Block]).toOption}
+  }
+
+  def getAllBlocks(): ListBuffer[Block] = {
     val key = clientID + "-BLOCK-*"
     var cursor = 0
-    var result = new ListBuffer[Option[Block]]
+    var result = new ListBuffer[Block]
     var blockList = new mutable.ListBuffer[String]
     do {
       var result: Option[(Option[Int], Option[List[Option[String]]])] = redis.scan(cursor, key,10)
-      blockList.++(result.get._2.get)
+      var list = result.get._2.get
+      if (list.length > 0) {
+        for (key <- list) {
+          blockList += key.get
+        }
+      }
       cursor = result.get._1.get
     } while(cursor != 0)
 
-    for (key <- blockList) {
-      result += getBlock(key)
+    for (bkey <- blockList) {
+      var k = getBlockByKey(bkey)
+      if(k != None) {result += k.get}
     }
     result
   }
 
   def putBlock(block: Block) : Option[String] = {
-    val key = clientID + "-BLOCK-" + block.number.toString
+    val key = clientID + "-BLOCK-" + block.id
     if(redis.set(key, serialise(block)) == None) {return None}
     else {return Try(key).toOption}
   }

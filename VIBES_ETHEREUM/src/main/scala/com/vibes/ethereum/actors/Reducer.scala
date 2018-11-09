@@ -91,7 +91,7 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
     globalStats.blockNum_= (getLatestBlockNum())
     globalStats = getAvgStats()
 
-    print("Stats Update received")
+    //print("Stats Update received")
   }
 
   def nodeCreated(clientId: String) = {
@@ -101,7 +101,7 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
 
   context.system.scheduler.schedule(10 second, 2 second, new Runnable {
     override def run(): Unit = {
-      println("SENDING REDUCER DATA OVER THE STREAM")
+      //println("SENDING REDUCER DATA OVER THE STREAM")
       globalStream offer StatsJson(
         globalStats.blockNum,
         globalStats.avgBlockTime,

@@ -62,8 +62,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     case NewExtBlock(block: Block) => blockVerify(block)
     case InitializeBlockchain(block: Block, accountList: ListBuffer[Account]) => initializeBlockchain(block, accountList)
     case CreateAccountEVM(account: Account) => createAccount(account)
-    case GetGhostDepth => {sender ! ReturnGhostDepth(DepthSet)}
-    case  UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth}
+    case GetGhostDepth() => {println("GET GHOST DEPTH") ; sender ! DepthSet}
+    case  UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; println("DEPTH-SET INitialized")}
     case _ => unhandled(message = AnyRef)
   }
 
@@ -83,6 +83,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     for (acc <- accountList) {
       redis.putAccount(acc, block.id)
     }
+    println("Node BLOCKCHAIN Initialized")
   }
 
 

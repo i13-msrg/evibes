@@ -12,9 +12,13 @@ import scala.collection.mutable
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.concurrent.Await
 import scala.util.Random
-import scala.concurrent.duration._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
+
 
 object Node {
   case class NewTx(tx: Transaction)
@@ -23,7 +27,6 @@ object Node {
   case class InitializeFullNode(bootNode: ActorRef)
   case class InitializeBootNode(accList: ListBuffer[Account])
   case class BlockchainCopyRequest()
-  case class BlockchainCopyResponse(clientId: String, blocks: ListBuffer[Option[Block]])
   case class CreateAccount(account: Account)
   case class ReturnGhostDepth(depth: GHOST_DepthSet)
   case class PropogateToNeighbours(block: Block)
@@ -76,7 +79,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
         accountingActor ! Discover
         val statusKeys = neighbourStatus.keys.toList
         for (key <- statusKeys) {
-          if (neighbourStatus.get(key) == false) {
+          if (neighbourStatus.get(key).get == false) {
             neighbourMap.remove(key)
             neighbourStatus.remove(key)
           }
@@ -124,8 +127,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
 
     case InitializeBootNode(accList: ListBuffer[Account]) => initializeBootNode(accList)
     case InitializeFullNode(bootNode: ActorRef) => initializeFullNode(bootNode)
-    case BlockchainCopyRequest() => copyRequest()
-    case BlockchainCopyResponse(clientId: String, blocks: ListBuffer[Option[Block]]) => blockchainResponse(clientId, blocks)
+    case BlockchainCopyRequest() => {copyRequest()}
     case ReturnGhostDepth(depth: GHOST_DepthSet) => {evmPrimaryActor ! UpdateGhostDepth(depth)}
     case _ => unhandled(message = AnyRef)
   }
@@ -148,7 +150,11 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   }
 
   def initializeFullNode(bNode: ActorRef) = {
-    initiateBlockchainCopy(bNode)
+    println("#######################################INITIALIZE FULL NODE MSG RECEIVED")
+    implicit val timeout = Timeout(5 seconds)
+    val future = bNode ? BlockchainCopyRequest()
+    val tuple = Await.result(future, timeout.duration).asInstanceOf[Tuple3[String, ListBuffer[Block],GHOST_DepthSet]]
+    blockchainResponse(tuple._1,tuple._2,tuple._3)
     bNode ! NeighbourCopyRequest(client.id)
     btNode = Option(bNode)
   }
@@ -183,23 +189,27 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   }
 
 
-  def initiateBlockchainCopy(bootNode: ActorRef) = {
-        bootNode ! BlockchainCopyRequest
-  }
-
   def copyRequest() = {
+    println("###############BLOCKCHAIN COPY REQ: RECEIVED")
+    implicit val timeout = Timeout(5 seconds)
     val blocks = redis.getAllBlocks()
-    evmPrimaryActor ! GetGhostDepth()
+    val future = evmPrimaryActor ? GetGhostDepth()
+    val depth = Await.result(future, timeout.duration).asInstanceOf[GHOST_DepthSet]
+    val tuple = new Tuple3[String, ListBuffer[Block],GHOST_DepthSet](client.id, blocks, depth)
+    sender ! tuple
   }
 
-  def blockchainResponse(clientId:String, blocks: ListBuffer[Option[Block]]) = {
+  def blockchainResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet) = {
+    println("Blockchain copy respnse ......")
     //Update the node state to : Copying the blockchain
-    blocks.foreach(opBlock => opBlock.foreach(block => {
+    blocks.foreach(block => {
       redis.putBlock(block);
       //Deviation from the regular message sending. Fetching values directly from REDIS.
       val stateMap = redis.getWorldState(block.id, clientId)
       for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id)}
-    }))
+      evmPrimaryActor ! UpdateGhostDepth(depth)
+    })
+    println("$$$$$$$$$$$$$$$$BLOCKCHAIN COPY RESPONSE: RECEIVED")
   }
 
   override def unhandled(message: Any): Unit = {

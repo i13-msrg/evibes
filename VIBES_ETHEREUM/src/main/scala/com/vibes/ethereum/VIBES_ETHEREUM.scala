@@ -25,7 +25,7 @@ import scala.io.StdIn
 
 object Setting {
   val bootNodes: Int = 2
-  val nodesNum: Int = 10
+  val nodesNum: Int = 1
   val txNum: Int = 20
   val accountsNum: Int = 10
   val bootAccNum: Int = 10
@@ -63,6 +63,7 @@ object VIBES_ETHEREUM extends DefaultJsonProtocol{
 
   def main(args: Array[String]) {
     println("Welcome to Ethereum simulation")
+
     implicit val system = ActorSystem("Ethereum")
     implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
