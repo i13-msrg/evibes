@@ -3,16 +3,18 @@ package com.vibes.ethereum.actors
 import akka.actor.{Actor, ActorPath, ActorRef, Props}
 import akka.event.Logging
 import com.vibes.ethereum.actors.ethnode.{EvmPrimary, TxPoolerActor}
-import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
+import com.vibes.ethereum.models._
 import com.vibes.ethereum.service.RedisManager
 import com.vibes.ethereum.Setting
 import com.vibes.ethereum.actors.ethnode.AccountingActor._
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.concurrent.Await
 import scala.util.Random
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object Node {
   case class NewTx(tx: Transaction)
@@ -21,9 +23,9 @@ object Node {
   case class InitializeFullNode(bootNode: ActorRef)
   case class InitializeBootNode(accList: ListBuffer[Account])
   case class BlockchainCopyRequest()
-  case class BlockchainCopyResponse(accountList: ListBuffer[Account], blocks: ListBuffer[Option[Block]])
+  case class BlockchainCopyResponse(clientId: String, blocks: ListBuffer[Option[Block]])
   case class CreateAccount(account: Account)
-
+  case class ReturnGhostDepth(depth: GHOST_DepthSet)
   case class PropogateToNeighbours(block: Block)
 
   case class AddNeighbours(neighbours:HashMap[String, ActorRef])
@@ -107,7 +109,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
       evmPrimaryActor ! NewExtBlock(block)
       accountingActor ! BlockReceived(propTime)
     }
-    case CreateAccount(account: Account) => createAccount(account)
+    case CreateAccount(account: Account) => {evmPrimaryActor ! CreateAccountEVM(account)}
     case PropogateToNeighbours(block: Block) => propogateToNeighbours(block)
 
     case NeighbourCopyRequest(clientId: String) => {
@@ -123,7 +125,8 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     case InitializeBootNode(accList: ListBuffer[Account]) => initializeBootNode(accList)
     case InitializeFullNode(bootNode: ActorRef) => initializeFullNode(bootNode)
     case BlockchainCopyRequest() => copyRequest()
-    case BlockchainCopyResponse(accountList: ListBuffer[Account], blocks: ListBuffer[Option[Block]]) => blockchainResponse(accountList, blocks)
+    case BlockchainCopyResponse(clientId: String, blocks: ListBuffer[Option[Block]]) => blockchainResponse(clientId, blocks)
+    case ReturnGhostDepth(depth: GHOST_DepthSet) => {evmPrimaryActor ! UpdateGhostDepth(depth)}
     case _ => unhandled(message = AnyRef)
   }
 
@@ -176,10 +179,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   }
 
   def initializeBootNode(accList: ListBuffer[Account]) = {
-    for (acc <- accList) {
-      createAccount(acc)
-    }
-    evmPrimaryActor ! InitializeParentBlock(setting.GenesisBlock)
+    evmPrimaryActor ! InitializeBlockchain(setting.GenesisBlock, accList)
   }
 
 
@@ -188,29 +188,18 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   }
 
   def copyRequest() = {
-    var accountDetailsList = new ListBuffer[Account]()
-    for (accId <- accountList) {
-      accountDetailsList += redis.getAccount(accId).get
-    }
     val blocks = redis.getAllBlocks()
-    sender ! BlockchainCopyResponse(accountDetailsList, blocks)
+    evmPrimaryActor ! GetGhostDepth()
   }
 
-  def blockchainResponse(accList: ListBuffer[Account], blocks: ListBuffer[Option[Block]]) = {
+  def blockchainResponse(clientId:String, blocks: ListBuffer[Option[Block]]) = {
     //Update the node state to : Copying the blockchain
-    var latestBlock = new Block(_transactionList = new ListBuffer[Transaction])
-    latestBlock.timestamp_=(0L)
-
-    accList.foreach(acc => {redis.putAccount(acc); accountList += acc.address})
-    blocks.foreach(opBlock => opBlock.foreach(block => {redis.putBlock(block);
-      if (block.timestamp > latestBlock.timestamp) {latestBlock = block}}))
-    evmPrimaryActor ! InitializeParentBlock(latestBlock)
-  }
-
-  def createAccount(account: Account) = {
-    val key = redis.putAccount(account)
-    accountList += key.get
-    //println("Account Created Successfully in Node")
+    blocks.foreach(opBlock => opBlock.foreach(block => {
+      redis.putBlock(block);
+      //Deviation from the regular message sending. Fetching values directly from REDIS.
+      val stateMap = redis.getWorldState(block.id, clientId)
+      for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id)}
+    }))
   }
 
   override def unhandled(message: Any): Unit = {

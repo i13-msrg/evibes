@@ -3,7 +3,7 @@ package com.vibes.ethereum.actors.ethnode
 import akka.actor.{Actor, ActorRef}
 import akka.event.Logging
 import com.vibes.ethereum.actors.ethnode.AccountingActor._
-import com.vibes.ethereum.models.{Account, Block, Client, Transaction}
+import com.vibes.ethereum.models._
 import com.vibes.ethereum.actors.ethnode.TxPoolerActor._
 import com.vibes.ethereum.actors.Node
 
@@ -15,7 +15,10 @@ import scala.util.Random
 object EvmPrimary {
   case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction])
   case class NewExtBlock(block: Block)
-  case class InitializeParentBlock(block: Block)
+  case class InitializeBlockchain(block: Block, accountList: ListBuffer[Account])
+  case class CreateAccountEVM(account: Account)
+  case class GetGhostDepth()
+  case class UpdateGhostDepth(depth: GHOST_DepthSet)
 }
 
 import scala.collection.mutable
@@ -31,10 +34,20 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   var accountsAffected = new HashMap[String, Account]
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
   val miner: Account = client.account
+
   //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
-  var parent: Block = new Block(_transactionList = new mutable.ListBuffer[Transaction]) // There will be a genesis block here
+  private var _parentBlock: Block = new Block(_transactionList = new mutable.ListBuffer[Transaction]) // There will be a genesis block here
+  private var _worldState = new  mutable.HashMap[String, Account]
+  //Getter
+  def parentBlock = _parentBlock
+  def worldState: mutable.HashMap[String, Account] = _worldState
+  //Setter
+  def parentBlock_= (value:Block) = _parentBlock = value
+  def worldState_= (value: mutable.HashMap[String, Account]) = _worldState = value
+
   accountingActor ! EvmInitialized
 
+  var DepthSet = new GHOST_DepthSet()
 
   override def postStop(): Unit = {
     accountingActor ! EvmStopped
@@ -47,38 +60,72 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   override def receive: Receive = {
     case InternalBlockCreated(txList : mutable.ListBuffer[Transaction]) => {accountingActor ! StartMining; blockCreate(txList)}
     case NewExtBlock(block: Block) => blockVerify(block)
-    case InitializeParentBlock(block: Block) => initializeBlock(block)
+    case InitializeBlockchain(block: Block, accountList: ListBuffer[Account]) => initializeBlockchain(block, accountList)
+    case CreateAccountEVM(account: Account) => createAccount(account)
+    case GetGhostDepth => {sender ! ReturnGhostDepth(DepthSet)}
+    case  UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth}
     case _ => unhandled(message = AnyRef)
   }
 
 
-  def initializeBlock(block: Block) = {
-    parent = block
+  def createAccount(acc:Account) = {
+    // Crate account with the blockID as parent
+    // Append the account to the world state of the blockID
+    val bId = DepthSet.getLeafBlock()
+    val pBlk = redis.getBlock(bId.blockId)
+    pBlk match {case Some(pBlk) => {redis.putAccount(acc, pBlk.id)}}
+  }
+
+  def initializeBlockchain(block: Block, accountList: ListBuffer[Account]) = {
+    val lb = new LightBlock(block.id, block.parentHash, 1)
+    DepthSet.addLightBlock(lb)
+    redis.putBlock(block)
+    for (acc <- accountList) {
+      redis.putAccount(acc, block.id)
+    }
   }
 
 
   def blockVerify(block: Block) = {
     accountingActor ! BlockVerificationStarted
-    var anscBlock = redis.getBlock(block.parentHash)
-    var propTime = ((System.currentTimeMillis() / 1000) - block.timestamp)
-    var startTime = System.currentTimeMillis() / 1000
+    val propTime = ((System.currentTimeMillis() / 1000) - block.timestamp)
+    val startTime = System.currentTimeMillis() / 1000
+    val anscBlock = redis.getBlock(block.parentHash)
     anscBlock match {
       case Some(anscBlock) => {
-        parent = anscBlock
-        if (blockComputation(block)) {accountingActor ! BlockVerified(startTime, parent, propTime)}
+        parentBlock_= (anscBlock)
+        worldState_= (redis.getWorldState(parentBlock.id))
+        if (blockComputation(block)) {accountingActor ! BlockVerified(startTime, parentBlock, propTime)}
       }
       case _ => {println("Invalid Block. DROPPING")}
     }
   }
 
   def blockComputation(block: Block): Boolean = {
+
+    redis.createWorldState(parentBlock.id,block.id)
+
     val starttime = System.currentTimeMillis() / 1000
     val txList = block.transactionList
+
+    if (txList.isEmpty) {
+      println("Empty tx list received"); return false
+    }
+    for (tx <- txList) {
+      if (redis.getTx(tx.id) == None) {
+        executeTx(tx, miner, calculateBlockGasLimit(parentBlock.gasLimit), block.id)
+      }
+    }
+
     for(key <- accountsAffected.keysIterator) {
-      redis.putAccount(accountsAffected.get(key).get)
+      val account = accountsAffected.get(key).get
+      redis.putAccount(account, block.id)
+      // Update the WorldState with Updated Account
+      redis.updateWorldState(account, parentBlock.id, block.id)
       println("Account added in the Block")
       accountsAffected.remove(key)
     }
+
     for (tx <- txList){
       redis.putTx(tx, block.id)
       println("Tx added in the Block")
@@ -95,10 +142,14 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     }
     //TODO: Update other fields in the block
     block.timestamp = System.currentTimeMillis() / 1000
+
+    val lb = new LightBlock(block.id, block.parentHash,DepthSet.getDepthOfBlock(parentBlock.id))
+    DepthSet.addLightBlock(lb)
     redis.putBlock(block)
     println("Block Created Successfully")
     accountingActor ! BlockGenerated(block.timestamp - starttime, block)
-    parent = block
+    parentBlock_= (block)
+    worldState_= (redis.getWorldState(block.id))
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
     nodeActor ! PropogateToNeighbours(block)
@@ -107,40 +158,51 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
 
 
   def blockCreate(txList : mutable.ListBuffer[Transaction]): Boolean = {
-    if (txList.isEmpty) {
-      println("Empty tx list received"); return false
-    }
-    for (tx <- txList) {
-      if (redis.getTx(tx.id) == None) {
-        executeTx(tx, miner, calculateBlockGasLimit(parent.gasLimit))
-      }
-    }
-    // Add the items in local context in the DB
-    //Add the updated sender and receiver in the database
+    //Update parent Block
+    var bId = DepthSet.getLeafBlock()
+    var pBlk = redis.getBlock(bId.blockId)
+    pBlk match {case Some(pBlk) => {parentBlock_= (pBlk); worldState_= (redis.getWorldState(pBlk.id))}}
+
     val block: Block = new Block(_transactionList = txList)
-    block.parentHash = parent.id
-    block.gasLimit = calculateBlockGasLimit(parent.gasLimit)
+
+    block.parentHash = parentBlock.id
+    block.gasLimit = calculateBlockGasLimit(parentBlock.gasLimit)
     block.beneficiary = miner.address
     block.gasUsed = getGasUsed()
-    block.number = getBlockNumber(parent.number)
-    block.difficulty = calculateDifficulty(block.number, parent.difficulty, block.timestamp, parent.timestamp)
+    block.number = getBlockNumber(parentBlock.number)
+    block.difficulty = calculateDifficulty(block.number, parentBlock.difficulty, block.timestamp, parentBlock.timestamp)
     block.transactionList = txList
     blockComputation(block)
   }
 
-
-  def getOrElseAccount(acc: String, default: Any): Any = {
+/*
+  def getOrElseAccount(acc: String, blockId: String,default: Any): Any = {
     var ac = accountsAffected.getOrElse(acc, None)
     if(ac == None) {
       //Not in local context
-      ac = redis.getAccount(acc).getOrElse(acc, None)
+      ac = redis.getAccount(acc, blockId).getOrElse(acc, None)
       if (ac == None) {return default}
       else {return ac}
     }
     else return ac
   }
 
-  def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float): Boolean ={
+  */
+
+  def getOrElseAccount(accAddr: String, blockId: String,default: Any): Any = {
+    var ac = accountsAffected.getOrElse(accAddr, None)
+    if(ac == None) {
+      //Not in local context. Get it from the WorldState
+      ac = worldState.get(accAddr)
+      if (ac == None) {return default}
+      else {return ac}
+    }
+    else return ac
+  }
+
+
+
+  def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float, blockId: String): Boolean ={
     /*
     val sender = getLocalAccount(tx.sender).getOrElse(default = return )
     if (!sender.isInstanceOf[Account]) {println("Sender Or receiver are new. Skipping tx"); return}
@@ -170,8 +232,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       //val sender = getAccount(tx.sender).getOrElse(default = return false)
       //val receiver = getAccount(tx.receiver).getOrElse(default = return false)
 
-    val senderAny = getOrElseAccount(tx.sender, None)
-    val receiverAny = getOrElseAccount(tx.receiver, None)
+    val senderAny = getOrElseAccount(tx.sender, blockId, None)
+    val receiverAny = getOrElseAccount(tx.receiver, blockId, None)
 
     if(senderAny.isInstanceOf[Account] & receiverAny.isInstanceOf[Account]) {
       val sender = senderAny.asInstanceOf[Account]

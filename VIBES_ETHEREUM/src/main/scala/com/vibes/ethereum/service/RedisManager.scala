@@ -44,16 +44,68 @@ class RedisManager(
     else {return None}
   }
 
-  def getAccount(accAddr: String) : Option[Account] = {
-    val acc = redis.get(clientID + "-ACC-" + accAddr)
+  // UPDATED
+  def getAccount(accAddr: String, blockId: String) : Option[Account] = {
+    val acc = redis.get(clientID + "-" + blockId + "-ACC-" + accAddr)
     if(acc == None) {return None}
     else {return Try(deserialise(acc.toString).asInstanceOf[Account]).toOption}
   }
 
-  def putAccount(account: Account) : Option[String] = {
-    val key = clientID + "-ACC-" + account.address.toString
-    if (redis.set(key, serialise(account))) {return Try(key).toOption}
+  // UPDATED
+  def putAccount(account: Account, blockId: String) : Option[String] = {
+    val key = clientID + "-" + blockId + "-ACC-" + account.address.toString
+    if (redis.set(key, serialise(account))) {
+      // Add the account to the current blocks worldState
+      redis.lpush(clientID + "-WORLD-" + blockId, key)
+      return Try(key).toOption
+    }
     else {return None}
+  }
+
+  //All the affected accounts have to undergo an Update
+  def updateWorldState(account: Account, parentBlockId: String, childBlockId: String): Option[String] = {
+    val key = clientID + "-WORLD-" + childBlockId
+    val prevStateKey = clientID + "-" + parentBlockId + "-ACC-" + account.address
+    redis.lrem(key,0,prevStateKey)
+
+    val accKey = clientID + "-" + childBlockId + "-ACC-" + account.address
+    if (redis.lpush(key, accKey) == None) {return None}
+    else {return Try(key).toOption}
+  }
+
+
+  def getWorldState(blockId: String): mutable.HashMap[String, Account] = {
+    val key = clientID + "-WORLD-" + blockId
+    val accKeyList = redis.lrange(key, 0, -1)
+    var accMap = new mutable.HashMap[String, Account]
+    for (acKey <- accKeyList) {
+      val account = deserialise(redis.get(acKey).get).asInstanceOf[Account]
+      accMap.put(account.address, account)
+    }
+    accMap
+  }
+
+  // Deviation from the standard Redis client implementation for simplification
+  def getWorldState(blockId: String, clientId: String): mutable.HashMap[String, Account] = {
+    val key = clientId + "-WORLD-" + blockId
+    val accKeyList = redis.lrange(key, 0, -1)
+    var accMap = new mutable.HashMap[String, Account]
+    for (acKey <- accKeyList) {
+      val account = deserialise(redis.get(acKey).get).asInstanceOf[Account]
+      accMap.put(account.address, account)
+    }
+    accMap
+  }
+
+
+  // Merge world state from 2 blocks. Useful for merging states of the parent into the child block
+  def createWorldState(parentId: String,childId: String) = {
+    val key = clientID + "-WORLD-" + parentId
+    val childKey = clientID + "-WORLD-" + childId
+    val accKeyList = redis.lrange(key, 0, -1)
+    for(accountKey <- accKeyList) {
+      redis.lpush(childKey, accountKey)
+    }
   }
 
   def putTxEntry(txID: String, accAddr: String, balance: Float): Option[String] = {

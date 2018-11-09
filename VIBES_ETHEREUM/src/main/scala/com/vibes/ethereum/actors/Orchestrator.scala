@@ -97,8 +97,8 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
 
 
   def createBootNodes(setting: Setting.type, reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson]): mutable.HashMap[String, ActorRef] = {
-    var nodeMap = new mutable.HashMap[String, ActorRef]
-    var genesisAccList = getGenesisAccountsList(setting.bootAccNum)
+    val nodeMap = new mutable.HashMap[String, ActorRef]
+    val genesisAccList = getGenesisAccountsList(setting.bootAccNum)
     for (i <- 1 to setting.bootNodes) {
       val nodetp = createNode("BOOTNODE", reducer, eventQueue, setting)
       nodeMap.put(nodetp._1, nodetp._2)
@@ -136,8 +136,9 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
       val acc = new Account(_creatorId = key)
       accounts += acc
       log.debug("Account Created : " + acc.address)
-      val node = nodeMap.get(key).get
-      node ! CreateAccount(acc)
+      // Send Account creation message to all the nodes
+      for (node <- nodeMap.valuesIterator) {node ! CreateAccount(acc)}
+
     }
     accounts
   }

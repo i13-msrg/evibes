@@ -48,14 +48,14 @@ class App extends Component {
         }
 
         this.globalEventSource = new EventSource('http://localhost:8080/global-events');
-        //this.localEventSource = new EventSource('http://localhost:8080/local-events');
-        //this.stateEventSource = new EventSource('http://localhost:8080/state-events');
+        this.localEventSource = new EventSource('http://localhost:8080/local-events');
+        this.stateEventSource = new EventSource('http://localhost:8080/state-events');
     }
 
     componentDidMount() {
         this.globalEventSource.onmessage = (e) => this.globalEventData(e.data);
-        //this.localEventSource.onmessage = (e) => this.localEventData(e.data);
-        //this.stateEventSource.onmessage = (e) => this.stateEventData(e.data);
+        this.localEventSource.onmessage = (e) => this.localEventData(e.data);
+        this.stateEventSource.onmessage = (e) => this.stateEventData(e.data);
     }
 
     globalEventData(nodeState) {
