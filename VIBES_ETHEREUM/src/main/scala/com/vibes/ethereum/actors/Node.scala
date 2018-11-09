@@ -151,7 +151,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
 
   def initializeFullNode(bNode: ActorRef) = {
     println("#######################################INITIALIZE FULL NODE MSG RECEIVED")
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout = Timeout(50 seconds)
     val future = bNode ? BlockchainCopyRequest()
     val tuple = Await.result(future, timeout.duration).asInstanceOf[Tuple3[String, ListBuffer[Block],GHOST_DepthSet]]
     blockchainResponse(tuple._1,tuple._2,tuple._3)
@@ -191,7 +191,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
 
   def copyRequest() = {
     println("###############BLOCKCHAIN COPY REQ: RECEIVED")
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout = Timeout(50 seconds)
     val blocks = redis.getAllBlocks()
     val future = evmPrimaryActor ? GetGhostDepth()
     val depth = Await.result(future, timeout.duration).asInstanceOf[GHOST_DepthSet]

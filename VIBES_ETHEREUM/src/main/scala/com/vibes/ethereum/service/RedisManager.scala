@@ -30,7 +30,7 @@ class RedisManager(
   }
 
   def getTx(txId: String) : Option[Transaction] = {
-    val tx = redis.get(clientID + "-TX-" + txId).get
+    val tx = redis.get(clientID + "-TX-" + txId)
     if(tx == None) {return None}
     else {return Try(deserialise(tx.toString).asInstanceOf[Transaction]).toOption}
   }
@@ -75,11 +75,14 @@ class RedisManager(
 
   def getWorldState(blockId: String): mutable.HashMap[String, Account] = {
     val key = clientID + "-WORLD-" + blockId
-    val accKeyList = redis.lrange(key, 0, -1)
+    val accKeyList = redis.lrange(key, 0, -1).get
     var accMap = new mutable.HashMap[String, Account]
     for (acKey <- accKeyList) {
-      val account = deserialise(redis.get(acKey).get).asInstanceOf[Account]
-      accMap.put(account.address, account)
+      val acc = redis.get(acKey)
+      if(acc != None) {
+        val account = deserialise(acc.get).asInstanceOf[Account]
+        accMap.put(account.address, account)
+      }
     }
     accMap
   }

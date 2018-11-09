@@ -63,7 +63,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
     val allNodes = startNodes(settings.nodesNum, bootNodes, reducer, eventQueue, settings, bootNodes)
     Thread.sleep(5000)
     val accounts = createAccountsInNode(settings.accountsNum, allNodes)
-    //scheduleTxCreation(settings, accounts, allNodes)
+    scheduleTxCreation(settings, accounts, allNodes)
   }
 
 
@@ -82,7 +82,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
 
   def scheduleTxCreation(settings: Setting.type, accounts: ListBuffer[Account], nodeMap: mutable.HashMap[String, ActorRef]): Cancellable = {
     var nodeKeys = nodeMap.keys.toList
-    context.system.scheduler.schedule(10 second, 10 second, new Runnable {
+    context.system.scheduler.schedule(20 second, 10 second, new Runnable {
       override def run(): Unit = {
         println("################CYCLE START##############")
         val txList = createTransactions(settings.txBatch, accounts)
