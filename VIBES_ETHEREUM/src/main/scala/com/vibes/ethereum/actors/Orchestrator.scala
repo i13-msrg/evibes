@@ -17,7 +17,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object Orchestrator {
   case class StartSimulation(settings: Setting.type )
   case class CreateBootNodes(settings:Setting.type, reducer:ActorRef)
-  case class CreateFullNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
+  case class CreateFullNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef,
+                             eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
                              bootNodeMap: mutable.HashMap[String, ActorRef])
   case class CreateAccounts(accNum: Int, nodesMap: mutable.HashMap[String, ActorRef])
 }
@@ -25,14 +26,12 @@ object Orchestrator {
 // TODO : How to stop the orchestrator. When is the simulation complete
 
 // TODO: HTTP API access for Orchestrator
-class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQueue: SourceQueueWithComplete[LocalStatsJson], globalStatsQueue: SourceQueueWithComplete[StatsJson]) extends Actor {
-  val log = Logging(context.system, this)
-
+class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQueue: SourceQueueWithComplete[LocalStatsJson],
+                   globalStatsQueue: SourceQueueWithComplete[StatsJson]) extends Actor with akka.actor.ActorLogging {
   import Orchestrator._
 
   override def preStart(): Unit = {
-    log.debug("Starting Orchestrator")
-    println("Starting Orchestrator")
+    log.info("Starting Orchestrator")
   }
 
   import Node._
@@ -41,11 +40,12 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
     case StartSimulation(settings) => startSimulation(settings)
   }
 
-  def startNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef, eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
+  def startNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef,
+                 eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
                  bootNodeMap: mutable.HashMap[String, ActorRef]): mutable.HashMap[String, ActorRef] = {
-    println("IN STARTNODE")
+    log.info("IN STARTNODE")
     for (i <- 0 until noOfNodes) {
-      println("Creationg Node " + i.toString())
+      log.info("Creationg Node " + i.toString())
       val nodetp = createNode("FULLNODE", reducer, eventQueue, setting)
       nodesMap.put(nodetp._1, nodetp._2)
       val bootNodeKeys = bootNodeMap.keys.toList
@@ -68,23 +68,20 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
 
 
   def initializeSimilator(settings: Setting.type, reducer: ActorRef): mutable.HashMap[String, ActorRef] = {
-    println("Boot node initialization started")
+    log.info("Boot node initialization started")
     val bootNodes = createBootNodes(settings, reducer, eventQueue)
     Thread.sleep(1000)
     addBootNodeNeighbours(bootNodes, settings.minConn, settings.maxConn)
-    println("Boot node initialization ended")
+    log.info("Boot node initialization ended")
     bootNodes
   }
-
-
-
 
 
   def scheduleTxCreation(settings: Setting.type, accounts: ListBuffer[Account], nodeMap: mutable.HashMap[String, ActorRef]): Cancellable = {
     var nodeKeys = nodeMap.keys.toList
     context.system.scheduler.schedule(20 second, 10 second, new Runnable {
       override def run(): Unit = {
-        println("################CYCLE START##############")
+        log.info("################CYCLE START##############")
         val txList = createTransactions(settings.txBatch, accounts)
         for (tx <- txList) {
           val node = nodeMap.get(nodeKeys(Random.nextInt(nodeKeys.length))).get
@@ -143,7 +140,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
       var key = nodeKeys(Random.nextInt(nodeKeys.length))
       val acc = new Account(_creatorId = key)
       accounts += acc
-      log.debug("Account Created : " + acc.address)
+      log.info("Account Created : " + acc.address)
       // Send Account creation message to all the nodes
       for (node <- nodeMap.valuesIterator) {node ! CreateAccount(acc)}
 

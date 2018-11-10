@@ -27,8 +27,8 @@ object Reducer {
   case class NodeCreated(clientId: String)
 }
 
-class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: SourceQueueWithComplete[LocalStatsJson]) extends Actor{
-  println("Starting Reducer")
+class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: SourceQueueWithComplete[LocalStatsJson]) extends Actor with akka.actor.ActorLogging {
+  log.info("Starting Reducer")
   var nodeStatsMap = new mutable.HashMap[String, Stats]
   var globalStats = new Stats()
   import Reducer._
@@ -101,7 +101,7 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
 
   context.system.scheduler.schedule(10 second, 2 second, new Runnable {
     override def run(): Unit = {
-      //println("SENDING REDUCER DATA OVER THE STREAM")
+      //log.info("SENDING REDUCER DATA OVER THE STREAM")
       globalStream offer StatsJson(
         globalStats.blockNum,
         globalStats.avgBlockTime,

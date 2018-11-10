@@ -63,7 +63,6 @@ object VIBES_ETHEREUM extends DefaultJsonProtocol{
 
   def main(args: Array[String]) {
     println("Welcome to Ethereum simulation")
-
     implicit val system = ActorSystem("Ethereum")
     implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end

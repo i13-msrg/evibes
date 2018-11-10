@@ -9,7 +9,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 libraryDependencies ++= Seq("net.debasishg" %% "redisclient" % "3.7")
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.14" % Test
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.5.17"
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-typed" % "2.5.17"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % "10.1.5",

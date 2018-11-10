@@ -38,11 +38,10 @@ object Node {
   case class NodeDiscoveryPong(clientId: String)
 }
 
-class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNode: Option[ActorRef], setting: Setting.type ) extends Actor {
+class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNode: Option[ActorRef], setting: Setting.type ) extends Actor with akka.actor.ActorLogging  {
   accountingActor ! NodeStart
-  val log = Logging(context.system, this)
-  log.debug("Starting Node")
-  //println("Starting Node : " + client.id)
+  log.info("Starting Node")
+  //log.info("Starting Node : " + client.id)
   accountingActor ! NodeStarted
   var btNode = bootNode
   val redis: RedisManager = new RedisManager(client.id)
@@ -150,7 +149,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   }
 
   def initializeFullNode(bNode: ActorRef) = {
-    println("#######################################INITIALIZE FULL NODE MSG RECEIVED")
+    log.info("#######################################INITIALIZE FULL NODE MSG RECEIVED")
     implicit val timeout = Timeout(50 seconds)
     val future = bNode ? BlockchainCopyRequest()
     val tuple = Await.result(future, timeout.duration).asInstanceOf[Tuple3[String, ListBuffer[Block],GHOST_DepthSet]]
@@ -179,7 +178,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     for (neighbour <- neighbourMap.valuesIterator) {
       tx.ttl -= 1
       if (tx.ttl > 0) {neighbour ! NewTx(tx)}
-      else {//println("Transaction dropped. TTL expired")
+      else {//log.info("Transaction dropped. TTL expired")
          }
     }
   }
@@ -190,7 +189,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
 
 
   def copyRequest() = {
-    println("###############BLOCKCHAIN COPY REQ: RECEIVED")
+    log.info("###############BLOCKCHAIN COPY REQ: RECEIVED")
     implicit val timeout = Timeout(50 seconds)
     val blocks = redis.getAllBlocks()
     val future = evmPrimaryActor ? GetGhostDepth()
@@ -200,7 +199,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   }
 
   def blockchainResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet) = {
-    println("Blockchain copy respnse ......")
+    log.info("Blockchain copy respnse ......")
     //Update the node state to : Copying the blockchain
     blocks.foreach(block => {
       redis.putBlock(block);
@@ -209,12 +208,12 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
       for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id)}
       evmPrimaryActor ! UpdateGhostDepth(depth)
     })
-    println("$$$$$$$$$$$$$$$$BLOCKCHAIN COPY RESPONSE: RECEIVED")
+    log.info("$$$$$$$$$$$$$$$$BLOCKCHAIN COPY RESPONSE: RECEIVED")
   }
 
   override def unhandled(message: Any): Unit = {
     // This message type is not handled by the TxPoolerActor
     // Write the msg details in the log
-    //println( message.toString() + "Message type not handled in Node Actor")
+    //log.info( message.toString() + "Message type not handled in Node Actor")
   }
 }

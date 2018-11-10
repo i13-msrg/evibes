@@ -12,6 +12,8 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 
+
+
 class RedisManager(
    private val clientID: String) {
 
@@ -31,6 +33,7 @@ class RedisManager(
 
   def getTx(txId: String) : Option[Transaction] = {
     val tx = redis.get(clientID + "-TX-" + txId)
+
     if(tx == None) {return None}
     else {return Try(deserialise(tx.toString).asInstanceOf[Transaction]).toOption}
   }
@@ -66,7 +69,6 @@ class RedisManager(
     val key = clientID + "-WORLD-" + childBlockId
     val prevStateKey = clientID + "-" + parentBlockId + "-ACC-" + account.address
     redis.lrem(key,0,prevStateKey)
-
     val accKey = clientID + "-" + childBlockId + "-ACC-" + account.address
     if (redis.lpush(key, accKey) == None) {return None}
     else {return Try(key).toOption}

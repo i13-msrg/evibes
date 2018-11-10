@@ -25,11 +25,10 @@ import scala.collection.mutable
 import com.vibes.ethereum.service.RedisManager
 import scala.collection.mutable.HashMap
 
-class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef, nodeActor: ActorRef) extends Actor{
-  val log = Logging(context.system, this)
+class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef, nodeActor: ActorRef) extends Actor with akka.actor.ActorLogging {
   accountingActor ! EvmStart
-  log.debug("Starting EvmPrimary")
-  println("Starting EvmPrimary : " + client.id)
+  log.info("Starting EvmPrimary")
+  log.info("Starting EvmPrimary : " + client.id)
   accountingActor ! EvmStarted
   var accountsAffected = new HashMap[String, Account]
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
@@ -62,8 +61,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     case NewExtBlock(block: Block) => blockVerify(block)
     case InitializeBlockchain(block: Block, accountList: ListBuffer[Account]) => initializeBlockchain(block, accountList)
     case CreateAccountEVM(account: Account) => createAccount(account)
-    case GetGhostDepth() => {println("GET GHOST DEPTH") ; sender ! DepthSet}
-    case  UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; println("DEPTH-SET INitialized")}
+    case GetGhostDepth() => {log.info("GET GHOST DEPTH") ; sender ! DepthSet}
+    case  UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; log.info("DEPTH-SET INitialized")}
     case _ => unhandled(message = AnyRef)
   }
 
@@ -83,7 +82,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     for (acc <- accountList) {
       redis.putAccount(acc, block.id)
     }
-    println("Node BLOCKCHAIN Initialized")
+    log.info("Node BLOCKCHAIN Initialized")
   }
 
 
@@ -98,7 +97,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         worldState_= (redis.getWorldState(parentBlock.id))
         if (blockComputation(block)) {accountingActor ! BlockVerified(startTime, parentBlock, propTime)}
       }
-      case _ => {println("Invalid Block. DROPPING")}
+      case _ => {log.info("Invalid Block. DROPPING")}
     }
   }
 
@@ -110,7 +109,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     val txList = block.transactionList
 
     if (txList.isEmpty) {
-      println("Empty tx list received"); return false
+      log.info("Empty tx list received"); return false
     }
     for (tx <- txList) {
       if (redis.getTx(tx.id) == None) {
@@ -123,13 +122,13 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       redis.putAccount(account, block.id)
       // Update the WorldState with Updated Account
       redis.updateWorldState(account, parentBlock.id, block.id)
-      println("Account added in the Block")
+      log.info("Account added in the Block")
       accountsAffected.remove(key)
     }
 
     for (tx <- txList){
       redis.putTx(tx, block.id)
-      println("Tx added in the Block")
+      log.info("Tx added in the Block")
     }
 
     for (key <- txListLocalContext.keysIterator) {
@@ -137,7 +136,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       for (addr <-addrMap.get.keysIterator ) {
         val bal = addrMap.get(addr)
         redis.putTxEntry(key, addr, bal)
-        println("txEntry added in the Block")
+        log.info("txEntry added in the Block")
       }
       txListLocalContext.remove(key)
     }
@@ -147,7 +146,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     val lb = new LightBlock(block.id, block.parentHash,DepthSet.getDepthOfBlock(parentBlock.id))
     DepthSet.addLightBlock(lb)
     redis.putBlock(block)
-    println("Block Created Successfully")
+    log.info("Block Created Successfully")
     accountingActor ! BlockGenerated(block.timestamp - starttime, block)
     parentBlock_= (block)
     worldState_= (redis.getWorldState(block.id))
@@ -206,7 +205,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float, blockId: String): Boolean ={
     /*
     val sender = getLocalAccount(tx.sender).getOrElse(default = return )
-    if (!sender.isInstanceOf[Account]) {println("Sender Or receiver are new. Skipping tx"); return}
+    if (!sender.isInstanceOf[Account]) {log.info("Sender Or receiver are new. Skipping tx"); return}
     */
       /*
       * 1. Reduce TgTp from Sender balance
@@ -268,7 +267,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         accAffected.put(receiver.address, receiver.balance)
         accAffected.put(miner.address, miner.balance)
         txListLocalContext.put(tx.id, accAffected)
-        println(f"Transaction $tx executed successfully")
+        log.info(f"Transaction $tx executed successfully")
       }
       else {
         //Send the transaction to the tx pool for executing it later, when the conditions are met

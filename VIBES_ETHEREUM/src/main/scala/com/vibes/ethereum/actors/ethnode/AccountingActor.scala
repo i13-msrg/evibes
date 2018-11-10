@@ -45,8 +45,8 @@ object AccountingActor {
 
 
 
-class AccountingActor(client: Client, evmQueue: SourceQueueWithComplete[EventJson], reducer: ActorRef) extends Actor{
-  println("Accounting actor started for " + client.id)
+class AccountingActor(client: Client, evmQueue: SourceQueueWithComplete[EventJson], reducer: ActorRef) extends Actor with akka.actor.ActorLogging {
+  log.info("Accounting actor started for " + client.id)
   var evmState  = EvmState.STOPPED
   var nodeState = NodeState.STOPPED
   var txPoolState = TxPoolState.STOPPED

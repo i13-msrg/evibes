@@ -16,13 +16,12 @@ object TxPoolerActor {
   case class InternalBlockCreated(txList: mutable.ListBuffer[Transaction])
 }
 
-class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Setting.type ,clientID: String) extends Actor{
+class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Setting.type ,clientID: String) extends Actor with akka.actor.ActorLogging {
   import TxPoolerActor._
   import AccountingActor._
-  val log = Logging(context.system, this)
   accountingActor ! PoolerStart
-  log.debug("Starting TxPoolerActor")
-  //println("Starting TxPoolerActor :" + this.clientID)
+  log.info("Starting TxPoolerActor")
+  //log.info("Starting TxPoolerActor :" + this.clientID)
   accountingActor ! PoolerStarted
 
   // Send more transactions than are allowed in blockGasLimit. As there might be some tx that might get rejected
@@ -48,16 +47,16 @@ class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Se
   def txOrder(tx: Transaction): Float = tx.gasPrice
 
   def handleTx(tx: Transaction) : Unit = {
-    //println(f"Received Transaction ID:  $tx.id")
+    //log.info(f"Received Transaction ID:  $tx.id")
     if (txPool.length !=(poolSize)) {
       for(t <- txPool) {if(tx.equals(t)) return} //Don't add same tx twice
       txPool.enqueue(tx)
-      //println(f"Added to the pool. Transaction ID: $tx.id")
+      //log.info(f"Added to the pool. Transaction ID: $tx.id")
       var size = txPool.length
 
-    //println(f"Pool size : $size")
+    //log.info(f"Pool size : $size")
       gasInPool += tx.gasLimit
-    //println(f"Gas in Pool : $gasInPool")
+    //log.info(f"Gas in Pool : $gasInPool")
     if (isGasLimitReached) {
       // TODO: Change this to reflect real ethereaum PoW probability
       if (scala.util.Random.nextInt(10)%3 == 0) {
@@ -68,8 +67,8 @@ class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Se
     // If the pool is full drop the transaction
     // ref : https://medium.com/blockchannel/life-cycle-of-an-ethereum-transaction-e5c66bae0f6e
       accountingActor ! TxPoolFull
-      //println("Transaction pool full")
-      //println(f"Dropping Transaction ID: $tx.id")
+      //log.info("Transaction pool full")
+      //log.info(f"Dropping Transaction ID: $tx.id")
   }
 }
 
@@ -82,7 +81,7 @@ def isGasLimitReached: Boolean = {
     var txList = new mutable.ListBuffer[Transaction]()
     if(isGasLimitReached) {
       var gasCount: Float = 0
-      //println("GasLimit reached")
+      //log.info("GasLimit reached")
       // Dequeue all the transactions from the queue
 
       while (gasCount <= blockGasLimit) {
@@ -91,10 +90,10 @@ def isGasLimitReached: Boolean = {
           var tx: Transaction = txPool.dequeue() //should we check empty dequeue ??
           gasCount += tx.gasLimit
           txList += tx
-        } else {println("Pool is empty."); return false}
-        //println(f"Added transaction to Block. ID: $tx.id")
+        } else {log.info("Pool is empty."); return false}
+        //log.info(f"Added transaction to Block. ID: $tx.id")
       }
-      println("Send the Transaction LIst to EVMPrimaryActor")
+      log.info("Send the Transaction LIst to EVMPrimaryActor")
       evmPrimary ! EvmPrimary.InternalBlockCreated(txList)
         txPool.clear()
       gasCount = 0
@@ -112,7 +111,7 @@ def isGasLimitReached: Boolean = {
   }
 
   override def unhandled(message: Any): Unit = {
-    //println("Message type not handled in TxPooler")
+    //log.info("Message type not handled in TxPooler")
   }
 }
 
