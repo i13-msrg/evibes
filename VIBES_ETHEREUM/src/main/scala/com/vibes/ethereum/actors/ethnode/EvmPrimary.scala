@@ -37,12 +37,16 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
   private var _parentBlock: Block = new Block(_transactionList = new mutable.ListBuffer[Transaction]) // There will be a genesis block here
   private var _worldState = new  mutable.HashMap[String, Account]
+  private var _txState = new ListBuffer[String]
   //Getter
   def parentBlock = _parentBlock
   def worldState: mutable.HashMap[String, Account] = _worldState
+  def txState: ListBuffer[String] = _txState
+
   //Setter
   def parentBlock_= (value:Block) = _parentBlock = value
   def worldState_= (value: mutable.HashMap[String, Account]) = _worldState = value
+  def txState_= (value: ListBuffer[String]) = _txState = value
 
   accountingActor ! EvmInitialized
 
@@ -72,96 +76,149 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     // Append the account to the world state of the blockID
     val bId = DepthSet.getLeafBlock()
     val pBlk = redis.getBlock(bId.blockId)
-    pBlk match {case Some(pBlk) => {redis.putAccount(acc, pBlk.id)}}
+    pBlk match {
+      case Some(pBlk) => {redis.putAccount(acc, pBlk.id)}
+      case None => {}
+    }
   }
 
   def initializeBlockchain(block: Block, accountList: ListBuffer[Account]) = {
+    log.info("[" +  client.id + "]" +  " [initializeBlockchain] ===== STARTED BLOCKCHAIN INITIALIZATION FOR CLIENT ======")
     val lb = new LightBlock(block.id, block.parentHash, 1)
     DepthSet.addLightBlock(lb)
     redis.putBlock(block)
     for (acc <- accountList) {
       redis.putAccount(acc, block.id)
     }
-    log.info("Node BLOCKCHAIN Initialized")
+    log.info("[" +  client.id + "]" +  " [initializeBlockchain] ===== BLOCKCHAIN INITIALITED FOR CLIENT ======")
   }
 
 
   def blockVerify(block: Block) = {
+    log.info( "[" +  client.id + "]"  + "===========BLOCK VERIFICATION STARTED===========")
+    log.info("[" +  client.id + "]" +  " [blockVerify] VERIFIY BLOCK: " + block.toString)
     accountingActor ! BlockVerificationStarted
     val propTime = ((System.currentTimeMillis() / 1000) - block.timestamp)
     val startTime = System.currentTimeMillis() / 1000
     val anscBlock = redis.getBlock(block.parentHash)
     anscBlock match {
       case Some(anscBlock) => {
+        log.info("[" +  client.id + "]" +  " [blockVerify] Ancestor Block Found in Blockchain." + anscBlock.id)
         parentBlock_= (anscBlock)
         worldState_= (redis.getWorldState(parentBlock.id))
-        if (blockComputation(block)) {accountingActor ! BlockVerified(startTime, parentBlock, propTime)}
+        //txState_= (redis.getTxState(parentBlock.id))
+        log.info("[" +  client.id + "]" +  " [blockVerify] Fetched World state of parent block")
+        log.info("[" +  client.id + "]" +  " [blockVerify] ## PARENT WORLD STATE:" + worldState.toString())
+        if (blockComputation(block)) {
+          log.info("[" +  client.id + "]" +  " [blockVerify] Block verified. BLOCK : " + block.id)
+          accountingActor ! BlockVerified(startTime, parentBlock, propTime)}
       }
-      case _ => {log.info("Invalid Block. DROPPING")}
+      case _ => {
+        log.info("[" +  client.id + "]" +  " [blockVerify] Parent block not found in the Blockchain. DROPPING BLOCK" + block.toString)
+      }
     }
+    log.info( "[" +  client.id + "]"  + "===========BLOCK VERIFICATION ENDED===========")
   }
 
   def blockComputation(block: Block): Boolean = {
-
+    log.info("[" +  client.id + "]" +  "%%%%% BLOCK COMPUTATION STARTED %%%%%")
     redis.createWorldState(parentBlock.id,block.id)
+    redis.createTxState(parentBlock.id,block.id)
+    log.info("[" +  client.id + "]" +  " [blockComputation] Created new World state")
 
     val starttime = System.currentTimeMillis() / 1000
     val txList = block.transactionList
+    log.info("[" +  client.id + "]" +  " [blockComputation] Fetch tx list from BLOCK ID: " + block.id)
+
 
     if (txList.isEmpty) {
-      log.info("Empty tx list received"); return false
+      log.info("[" +  client.id + "]" +  " [blockComputation] Empty tx list received from BLOCK ID: " + block.id); return false
     }
     for (tx <- txList) {
-      if (redis.getTx(tx.id) == None) {
-        executeTx(tx, miner, calculateBlockGasLimit(parentBlock.gasLimit), block.id)
-      }
+      log.info("[" +  client.id + "]" +  " [blockComputation] Tx under consideration: " + tx.id)
+      executeTx(tx, miner, calculateBlockGasLimit(parentBlock.gasLimit), block.id)
     }
 
+    log.info("[" +  client.id + "]" +  " [blockComputation] Add affected accounts to redisDB")
+    log.info("[" +  client.id + "]" +  " [blockComputation] Affected Accounts : " + accountsAffected.toString())
     for(key <- accountsAffected.keysIterator) {
+      log.info("[" +  client.id + "]" +  " [blockComputation] ****** UPDATE WORLD STATE BEGIN ******")
       val account = accountsAffected.get(key).get
       redis.putAccount(account, block.id)
+      log.info("[" +  client.id + "]" +  " [blockComputation] Added account: " + account.address)
       // Update the WorldState with Updated Account
       redis.updateWorldState(account, parentBlock.id, block.id)
-      log.info("Account added in the Block")
+      log.info("[" +  client.id + "]" +  " [blockComputation] World State updated in redisDB ")
       accountsAffected.remove(key)
+      log.info("[" +  client.id + "]" +  " [blockComputation] ****** UPDATE WORLD STATE END ******")
     }
 
+    log.info("[" +  client.id + "]" +  " [blockComputation] ****** ADD TX TO BLOCK BEGIN ******")
     for (tx <- txList){
       redis.putTx(tx, block.id)
-      log.info("Tx added in the Block")
+      log.info("[" +  client.id + "]" +  " [blockComputation] Add tx in Block. TX: " + tx.id)
     }
 
+    log.info("[" +  client.id + "]" +  " [blockComputation] ****** ADD TX TO BLOCK END ******")
+
+
+    log.info("[" +  client.id + "]" +  " [blockComputation] ****** ADD TX ENTRY TO DB BEGIN ******")
     for (key <- txListLocalContext.keysIterator) {
       val addrMap = txListLocalContext.get(key)
       for (addr <-addrMap.get.keysIterator ) {
         val bal = addrMap.get(addr)
         redis.putTxEntry(key, addr, bal)
-        log.info("txEntry added in the Block")
+        log.info("[" +  client.id + "]" +  " [blockComputation] TX entry added. (key, addr, balance) = (" + key + "," + addr + "," + bal  + ")")
       }
       txListLocalContext.remove(key)
     }
+    log.info("[" +  client.id + "]" +  " [blockComputation] ****** ADD TX ENTRY TO DB END ******")
+
     //TODO: Update other fields in the block
     block.timestamp = System.currentTimeMillis() / 1000
 
-    val lb = new LightBlock(block.id, block.parentHash,DepthSet.getDepthOfBlock(parentBlock.id))
+    val lb = new LightBlock(block.id, block.parentHash, DepthSet.getDepthOfBlock(parentBlock.id) + 1)
+    block.number = parentBlock.number + 1
     DepthSet.addLightBlock(lb)
     redis.putBlock(block)
-    log.info("Block Created Successfully")
+    log.info("[" +  client.id + "]" +  " [blockComputation] ??????? BLOCK CREATED SUCCESSFULLY ???????")
+    log.info("[" +  client.id + "]" +  " [blockComputation] NEW BLOCK : " + block.toString)
     accountingActor ! BlockGenerated(block.timestamp - starttime, block)
     parentBlock_= (block)
     worldState_= (redis.getWorldState(block.id))
+    //txState_=(redis.getTxState(block.id))
+    log.info("[" +  client.id + "]" +  " [blockComputation] NEW WORLD STATE : " + worldState.toString())
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
     nodeActor ! PropogateToNeighbours(block)
+    log.info("[" +  client.id + "]" +  "%%%%% BLOCK COMPUTATION ENDED %%%%%")
     return true
   }
 
 
   def blockCreate(txList : mutable.ListBuffer[Transaction]): Boolean = {
     //Update parent Block
+    log.info( "[" +  client.id + "]"  + "===========MINING STARTED===========")
     var bId = DepthSet.getLeafBlock()
+    log.info("[" +  client.id + "]" + "Depth of parent block : " + bId.depth)
     var pBlk = redis.getBlock(bId.blockId)
-    pBlk match {case Some(pBlk) => {parentBlock_= (pBlk); worldState_= (redis.getWorldState(pBlk.id))}}
+    pBlk match {
+      case Some(pBlk) => {
+          parentBlock_= (pBlk); worldState_= (redis.getWorldState(pBlk.id))
+          txState_=(redis.getTxState(pBlk.id))
+          log.info("[" +  client.id + "]" +  " [Mining] Fetched world state from parent")
+          log.info("[" +  client.id + "]" +  " [Mining] WORLD STATE : " + worldState.toString())
+        }
+      case None => {}
+    }
+
+    //Remove all the transactions that have been executed in the current blockchain subtree
+    log.info("[" +  client.id + "]" +  " [Mining] Removing all the transactions that have been executed in the current blockchain subtree")
+    log.info("[" +  client.id + "]" +  " [Mining] Length of Tx List Before:" + txList.length)
+    for (tx <- txList) {
+      if(txState.contains(tx)) { txList.remove(txList.indexOf(tx))}
+    }
+    log.info("[" +  client.id + "]" +  " [Mining] Length of Tx List After:" + txList.length)
 
     val block: Block = new Block(_transactionList = txList)
 
@@ -172,7 +229,12 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     block.number = getBlockNumber(parentBlock.number)
     block.difficulty = calculateDifficulty(block.number, parentBlock.difficulty, block.timestamp, parentBlock.timestamp)
     block.transactionList = txList
-    blockComputation(block)
+    log.info("[" +  client.id + "]" +  " [Mining] Updated Block fields while Mining")
+    log.info("[" +  client.id + "]" +  " [Mining] BLOCK " + block.toString())
+    log.info("[" +  client.id + "]" +  " [Mining] Starting Block computation while mining BLOCK ID: " + block.id)
+    val result = blockComputation(block)
+    log.info( "[" +  client.id + "]"  + "===========MINING ENDED===========")
+    result
   }
 
 /*
@@ -190,14 +252,22 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   */
 
   def getOrElseAccount(accAddr: String, blockId: String,default: Any): Any = {
-    var ac = accountsAffected.getOrElse(accAddr, None)
+    log.info("[" +  client.id + "]" +  " [getOrElseAccount] GET ACCOUNT: " + accAddr)
+    val ac = accountsAffected.getOrElse(accAddr, None)
     if(ac == None) {
+      log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "not present in local context.")
       //Not in local context. Get it from the WorldState
-      ac = worldState.get(accAddr)
-      if (ac == None) {return default}
-      else {return ac}
+      val acWS = worldState.get(accAddr)
+      if (acWS == None) {
+        log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "not present in WORLD STATE.")
+        return default}
+      else {
+        log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "present in WORLD STATE.")
+        return acWS.get}
     }
-    else return ac
+    else {
+      log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "present in local context.")
+      return ac}
   }
 
 
@@ -231,18 +301,28 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       // New accounts
       //val sender = getAccount(tx.sender).getOrElse(default = return false)
       //val receiver = getAccount(tx.receiver).getOrElse(default = return false)
-
+    log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  +  " [executeTx] %%%%% TRANSACTION EXEC STARTED %%%%%")
+    log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  +" [executeTx] Fetch sender and receiver. STARTED")
     val senderAny = getOrElseAccount(tx.sender, blockId, None)
     val receiverAny = getOrElseAccount(tx.receiver, blockId, None)
-
+    log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  + " [executeTx] Fetch sender and receiver. ENDED")
     if(senderAny.isInstanceOf[Account] & receiverAny.isInstanceOf[Account]) {
       val sender = senderAny.asInstanceOf[Account]
       val receiver = receiverAny.asInstanceOf[Account]
+      log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  + " [executeTx] valid sender and receiver")
 
       if (isValidTx(sender, tx, blockGasLimit)) {
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  + " [executeTx] valid Transaction")
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP1] Reduce TgTp from sender balance. Tg:" + tx.gasLimit.toString +
+        " Tp :" + tx.gasPrice.toString )
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  + " [executeTx][STEP1-S] sender balance before -TgTp: " + sender.balance)
         sender.balance -= tx.gasLimit * tx.gasPrice
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  + " [executeTx][STEP1-E] sender balance after -TgTp: " + sender.balance)
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  + " [executeTx][STEP2-S] sender nonce before Increment: " + sender.nonce)
         sender.nonce += 1
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  + " [executeTx][STEP1-E] sender nonce after Increment: " + sender.nonce)
         val gasRemaining = tx.gasLimit - getGasUsed()
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP3] Remaining GAS : " + gasRemaining.toString)
         //Here call EVM secondary for contracts
         // Send a request to estimate gas reqd(g') if contracts
 
@@ -251,12 +331,19 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         var gasRefund = gasRemaining
         val gasRefund_1 = ((tx.gasLimit - gasRemaining) / 2).floor
         if (gasRefund_1 < 0) gasRefund += gasRefund_1 else gasRefund += 0
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP6] Refund Amount : " + gasRefund.toString)
         sender.balance += (gasRefund * tx.gasPrice)
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP7] Refund Amount to sender. Sender balance Now: " + sender.balance.toString)
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP8-S] benificiary prize updated. Acc- Bal Before: " + miner.balance.toString)
         miner.balance += (tx.gasLimit - gasRefund) * tx.gasPrice
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP8-E] benificiary prize updated. Acc- Bal After: " + miner.balance.toString)
 
         //Transaction value transfer
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP9] Transaction Transfer")
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP9-S] SENDER: " + sender.balance.toString + "  | RECEIVER :" +receiver.balance.toString)
         sender.balance -= tx.value
         receiver.balance += tx.value
+        log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  +" [executeTx][STEP9-S] SENDER: " + sender.balance.toString + "  | RECEIVER :" +receiver.balance.toString)
 
         accountsAffected.put(sender.address, sender)
         accountsAffected.put(receiver.address, receiver)
@@ -267,14 +354,21 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         accAffected.put(receiver.address, receiver.balance)
         accAffected.put(miner.address, miner.balance)
         txListLocalContext.put(tx.id, accAffected)
-        log.info(f"Transaction $tx executed successfully")
+        log.info("[" +  client.id + "]" +  " [executeTx] TRANSACTION EXEC SUCCESSFULLY. TX:" + tx.id)
+        log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
+        return true
       }
       else {
+        log.info("[" +  client.id + "]" +  " [executeTx] invalid Transaction : " + tx.id + "added back to the txpool")
         //Send the transaction to the tx pool for executing it later, when the conditions are met
         context.sender ! AddTxToPool(tx)
+        log.info("[" +  client.id + "]" +  " [executeTx] @@@@@ TX NOT EXECUTED. REASON : INVALID TX: " + tx.id)
+        log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
+        return false
       }
-      return true
     }
+    log.info("[" +  client.id + "]" +  " [executeTx] @@@@@ TX NOT EXECUTED. REASON : SENDER or RECEIVER not present in WORLD STATE. TX: " + tx.id)
+    log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
     return false
   }
 

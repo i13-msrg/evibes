@@ -19,9 +19,11 @@ class RedisManager(
 
   private val redis: RedisClient = new RedisClient("localhost", 6379)
   def getClient(id: String) : Option[Client] ={
-    val client = redis.get("CLIENT-" + id).get
-    if(client == None) {return None}
-    else {return Try(deserialise(client.toString).asInstanceOf[Client]).toOption}
+    val client = redis.get("CLIENT-" + id)
+    client match {
+      case None => {return None}
+      case Some(clt) => {return Try(deserialise(clt.toString).asInstanceOf[Client]).toOption}
+    }
   }
 
   def putClient(client:Client) : Option[String] ={
@@ -30,7 +32,7 @@ class RedisManager(
       if (redis.set(key, value)) {return Try(key).toOption}
       else {return None}
   }
-
+/*
   def getTx(txId: String) : Option[Transaction] = {
     val tx = redis.get(clientID + "-TX-" + txId)
 
@@ -45,12 +47,77 @@ class RedisManager(
     if (redis.set(key, value)) {return Try(key).toOption}
     else {return None}
   }
+*/
+
+
+  //UPDATED
+  def getTx(txId: String, blockId: String) : Option[Transaction] = {
+    val tx = redis.get(clientID + "-" + blockId + "-TX-" + txId)
+    tx match {
+      case None => {return None}
+      case Some(txObj) => {return Try(deserialise(txObj.toString).asInstanceOf[Transaction]).toOption}
+    }
+  }
+
+
+  // Only transactions that are a part of a block are added in the database
+  //UPDATED
+  def putTx(tx: Transaction, blockID: String) : Option[String] = {
+    val value = serialise(tx)
+    val key = clientID + "-" + blockID + "-TX-" + tx.id
+    if (redis.set(key, value)) {
+      // Add Tx ID to the TXSTATE for the block
+      redis.lpush(clientID + "-TXSTATE-" + blockID, tx.id)
+      return Try(key).toOption
+    }
+    else {return None}
+  }
+
+  // Copies all the tx state from the parent node. This way the child has an idea of all the tx executed before on the blockchain branch
+  def createTxState(parentId: String, childId: String) = {
+    val key = clientID + "-TXSTATE-" + parentId
+    val childKey = clientID + "-TXSTATE-" + childId
+    // Copy parent state to child state
+    val txList = redis.lrange(key, 0, -1).get
+    for(txKey <- txList) {
+      redis.lpush(childKey, txKey)
+    }
+  }
+
+  def getTxState(blockId: String): ListBuffer[String] = {
+    val key = clientID + "-TXSTATE-" + blockId
+    val txIdList = redis.lrange(key, 0, -1).get
+    var txList = new ListBuffer[String]
+    for (txId <- txIdList) {
+      if (txId != None) {txList += txId.get}
+    }
+    txList
+  }
+
+  def getTxState(blockId: String, clientId: String): ListBuffer[String] = {
+    val key = clientId + "-TXSTATE-" + blockId
+    val txIdList = redis.lrange(key, 0, -1).get
+    var txList = new ListBuffer[String]
+    for (txId <- txIdList) {
+      if (txId != None) {txList += txId.get}
+    }
+    txList
+  }
+
+  def putTxState(blockId: String, state: ListBuffer[String]) ={
+    val key = clientID + "-TXSTATE-" + blockId
+    for(txId <- state) {
+      redis.lpush(key, txId)
+    }
+  }
 
   // UPDATED
   def getAccount(accAddr: String, blockId: String) : Option[Account] = {
-    val acc = redis.get(clientID + "-" + blockId + "-ACC-" + accAddr).get
-    if(acc == None) {return None}
-    else {return Try(deserialise(acc.toString).asInstanceOf[Account]).toOption}
+    val acc = redis.get(clientID + "-" + blockId + "-ACC-" + accAddr)
+    acc match {
+      case None => {return None}
+      case Some(account) => {return Try(deserialise(account.toString).asInstanceOf[Account]).toOption}
+    }
   }
 
   // UPDATED
@@ -80,10 +147,13 @@ class RedisManager(
     val accKeyList = redis.lrange(key, 0, -1).get
     var accMap = new mutable.HashMap[String, Account]
     for (acKey <- accKeyList) {
-      val acc = redis.get(acKey)
-      if(acc != None) {
-        val account = deserialise(acc.get).asInstanceOf[Account]
-        accMap.put(account.address, account)
+      val acc = redis.get(acKey.get)
+      acc match {
+        case Some(acc) => {
+          val account = deserialise(acc).asInstanceOf[Account]
+          accMap.put(account.address, account)
+        }
+        case None => {}
       }
     }
     accMap
@@ -120,9 +190,11 @@ class RedisManager(
 
   def getBlock(blockId: String) : Option[Block] = {
     val key = clientID + "-BLOCK-" + blockId
-    val block = redis.get(key).get
-    if (block == None) {return None}
-    else {return Try(deserialise(block.toString).asInstanceOf[Block]).toOption}
+    val block = redis.get(key)
+    block match {
+      case None => {return None}
+      case Some(x) => {return Try(deserialise(x.toString).asInstanceOf[Block]).toOption}
+    }
   }
 
   def getBlockByKey(key: String): Option[Block] = {
@@ -148,15 +220,18 @@ class RedisManager(
     } while(cursor != 0)
 
     for (bkey <- blockList) {
-      var k = getBlockByKey(bkey)
-      if(k != None) {result += k.get}
+      var blk = getBlockByKey(bkey)
+      blk match {
+        case Some(blk) => {result += blk}
+        case None => {}
+      }
     }
     result
   }
 
   def putBlock(block: Block) : Option[String] = {
     val key = clientID + "-BLOCK-" + block.id
-    if(redis.set(key, serialise(block)) == None) {return None}
+    if(redis.set(key, serialise(block))) {return None}
     else {return Try(key).toOption}
   }
 

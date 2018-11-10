@@ -5,7 +5,7 @@ import com.vibes.ethereum.helpers.GuidExtension
 @SerialVersionUID(123L)
 class Account(
   private var _nonce: Int = 1,
-  private var _balance: Float = 500,
+  private var _balance: Float = 2200000,
   private var _address: String = "temp",
   private var _lat: String = "test",
   private var _lon: String = "test",

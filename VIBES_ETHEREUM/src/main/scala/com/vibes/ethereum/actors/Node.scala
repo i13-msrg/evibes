@@ -205,6 +205,8 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
       redis.putBlock(block);
       //Deviation from the regular message sending. Fetching values directly from REDIS.
       val stateMap = redis.getWorldState(block.id, clientId)
+      val txState = redis.getTxState(block.id,clientId)
+      redis.putTxState(block.id, txState)
       for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id)}
       evmPrimaryActor ! UpdateGhostDepth(depth)
     })

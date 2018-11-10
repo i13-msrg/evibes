@@ -20,7 +20,7 @@ class TxPoolerActor(evmPrimary: ActorRef, accountingActor: ActorRef, setting: Se
   import TxPoolerActor._
   import AccountingActor._
   accountingActor ! PoolerStart
-  log.info("Starting TxPoolerActor")
+  //log.info("Starting TxPoolerActor")
   //log.info("Starting TxPoolerActor :" + this.clientID)
   accountingActor ! PoolerStarted
 
@@ -90,10 +90,11 @@ def isGasLimitReached: Boolean = {
           var tx: Transaction = txPool.dequeue() //should we check empty dequeue ??
           gasCount += tx.gasLimit
           txList += tx
-        } else {log.info("Pool is empty."); return false}
+        } else {//log.info("Pool is empty.")
+          return false}
         //log.info(f"Added transaction to Block. ID: $tx.id")
       }
-      log.info("Send the Transaction LIst to EVMPrimaryActor")
+      //log.info("Send the Transaction LIst to EVMPrimaryActor")
       evmPrimary ! EvmPrimary.InternalBlockCreated(txList)
         txPool.clear()
       gasCount = 0
@@ -111,7 +112,7 @@ def isGasLimitReached: Boolean = {
   }
 
   override def unhandled(message: Any): Unit = {
-    //log.info("Message type not handled in TxPooler")
+    log.info("Message type not handled in TxPooler")
   }
 }
 
