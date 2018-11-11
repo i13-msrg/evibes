@@ -121,11 +121,11 @@ class RedisManager(
   }
 
   // UPDATED
-  def putAccount(account: Account, blockId: String) : Option[String] = {
+  def putAccount(account: Account, blockId: String, updateState: Boolean) : Option[String] = {
     val key = clientID + "-" + blockId + "-ACC-" + account.address.toString
+    // Add the account to the current blocks worldState
     if (redis.set(key, serialise(account))) {
-      // Add the account to the current blocks worldState
-      redis.lpush(clientID + "-WORLD-" + blockId, key)
+      if(updateState) {redis.lpush(clientID + "-WORLD-" + blockId, key)}
       return Try(key).toOption
     }
     else {return None}
@@ -135,10 +135,12 @@ class RedisManager(
   def updateWorldState(account: Account, parentBlockId: String, childBlockId: String): Option[String] = {
     val key = clientID + "-WORLD-" + childBlockId
     val prevStateKey = clientID + "-" + parentBlockId + "-ACC-" + account.address
-    redis.lrem(key,0,prevStateKey)
-    val accKey = clientID + "-" + childBlockId + "-ACC-" + account.address
-    if (redis.lpush(key, accKey) == None) {return None}
-    else {return Try(key).toOption}
+    val rem = redis.lrem(key,1, prevStateKey)
+    if(rem.get == 1) {
+      val accKey = clientID + "-" + childBlockId + "-ACC-" + account.address
+      redis.lpush(key, accKey)
+    }
+    return Try(key).toOption
   }
 
 
@@ -173,19 +175,28 @@ class RedisManager(
 
 
   // Merge world state from 2 blocks. Useful for merging states of the parent into the child block
-  def createWorldState(parentId: String,childId: String) = {
+  def createWorldState(parentId: String, childId: String) = {
     val key = clientID + "-WORLD-" + parentId
     val childKey = clientID + "-WORLD-" + childId
-    val accKeyList = redis.lrange(key, 0, -1)
+    val accKeyList = redis.lrange(key, 0, -1).get
     for(accountKey <- accKeyList) {
-      redis.lpush(childKey, accountKey)
+      redis.lpush(childKey, accountKey.get)
     }
   }
 
+  /*
+  def createInitialWorldState(blockId: String, accounts: ListBuffer[String]) ={
+    val key = clientID + "-WORLD-" + blockId
+    for(txId <- accounts) {
+      redis.lpush(key, txId)
+    }
+  }
+  */
+
   def putTxEntry(txID: String, accAddr: String, balance: Float): Option[String] = {
     val key = clientID + "-TX-ENTRY-" + accAddr
-    if (redis.lpush(key, txID + ":" + balance.toString) == None) {return None}
-    else {return Try(key).toOption}
+    redis.lpush(key, txID + ":" + balance.toString)
+    return Try(key).toOption
   }
 
   def getBlock(blockId: String) : Option[Block] = {

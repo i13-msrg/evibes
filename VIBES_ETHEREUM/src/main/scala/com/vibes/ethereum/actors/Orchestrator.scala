@@ -79,7 +79,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
 
   def scheduleTxCreation(settings: Setting.type, accounts: ListBuffer[Account], nodeMap: mutable.HashMap[String, ActorRef]): Cancellable = {
     var nodeKeys = nodeMap.keys.toList
-    context.system.scheduler.schedule(20 second, 10 second, new Runnable {
+    context.system.scheduler.schedule(25 second, 10 second, new Runnable {
       override def run(): Unit = {
         log.info("################CYCLE START##############")
         val txList = createTransactions(settings.txBatch, accounts)
@@ -140,7 +140,7 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
       var key = nodeKeys(Random.nextInt(nodeKeys.length))
       val acc = new Account(_creatorId = key)
       accounts += acc
-      log.info("Account Created : " + acc.address)
+      //log.info("Account Created : " + acc.address)
       // Send Account creation message to all the nodes
       for (node <- nodeMap.valuesIterator) {node ! CreateAccount(acc)}
 

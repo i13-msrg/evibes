@@ -17,7 +17,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.concurrent.duration._
 
 
 object Node {
@@ -27,6 +26,7 @@ object Node {
   case class InitializeFullNode(bootNode: ActorRef)
   case class InitializeBootNode(accList: ListBuffer[Account])
   case class BlockchainCopyRequest()
+  case class BlockchainCopyResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet)
   case class CreateAccount(account: Account)
   case class ReturnGhostDepth(depth: GHOST_DepthSet)
   case class PropogateToNeighbours(block: Block)
@@ -127,6 +127,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     case InitializeBootNode(accList: ListBuffer[Account]) => initializeBootNode(accList)
     case InitializeFullNode(bootNode: ActorRef) => initializeFullNode(bootNode)
     case BlockchainCopyRequest() => {copyRequest()}
+    case BlockchainCopyResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet) => {blockchainCopyResponse(clientId, blocks, depth)}
     case ReturnGhostDepth(depth: GHOST_DepthSet) => {evmPrimaryActor ! UpdateGhostDepth(depth)}
     case _ => unhandled(message = AnyRef)
   }
@@ -151,9 +152,12 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   def initializeFullNode(bNode: ActorRef) = {
     log.info("#######################################INITIALIZE FULL NODE MSG RECEIVED")
     implicit val timeout = Timeout(50 seconds)
+    /*
     val future = bNode ? BlockchainCopyRequest()
     val tuple = Await.result(future, timeout.duration).asInstanceOf[Tuple3[String, ListBuffer[Block],GHOST_DepthSet]]
     blockchainResponse(tuple._1,tuple._2,tuple._3)
+    */
+    bNode ! BlockchainCopyRequest()
     bNode ! NeighbourCopyRequest(client.id)
     btNode = Option(bNode)
   }
@@ -194,21 +198,24 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     val blocks = redis.getAllBlocks()
     val future = evmPrimaryActor ? GetGhostDepth()
     val depth = Await.result(future, timeout.duration).asInstanceOf[GHOST_DepthSet]
-    val tuple = new Tuple3[String, ListBuffer[Block],GHOST_DepthSet](client.id, blocks, depth)
-    sender ! tuple
+    //val tuple = new Tuple3[String, ListBuffer[Block],GHOST_DepthSet](client.id, blocks, depth)
+    sender ! BlockchainCopyResponse(client.id, blocks, depth)
   }
 
-  def blockchainResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet) = {
+  def blockchainCopyResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet) = {
     log.info("Blockchain copy respnse ......")
     //Update the node state to : Copying the blockchain
     blocks.foreach(block => {
-      redis.putBlock(block);
+      redis.putBlock(block)
       //Deviation from the regular message sending. Fetching values directly from REDIS.
       val stateMap = redis.getWorldState(block.id, clientId)
+      log.info("%%%%%%%%%%%%%%%%%%%%% ADITYA WORLD STATE COUNT:" + stateMap.keySet.size)
       val txState = redis.getTxState(block.id,clientId)
       redis.putTxState(block.id, txState)
-      for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id)}
-      evmPrimaryActor ! UpdateGhostDepth(depth)
+      for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id, true)}
+      implicit val timeout = Timeout(50 seconds)
+      val future = evmPrimaryActor ? UpdateGhostDepth(depth)
+      val success = Await.result(future, timeout.duration).asInstanceOf[Boolean]
     })
     log.info("$$$$$$$$$$$$$$$$BLOCKCHAIN COPY RESPONSE: RECEIVED")
   }

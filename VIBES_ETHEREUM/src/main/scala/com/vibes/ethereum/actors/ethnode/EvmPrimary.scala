@@ -1,7 +1,6 @@
 package com.vibes.ethereum.actors.ethnode
 
 import akka.actor.{Actor, ActorRef}
-import akka.event.Logging
 import com.vibes.ethereum.actors.ethnode.AccountingActor._
 import com.vibes.ethereum.models._
 import com.vibes.ethereum.actors.ethnode.TxPoolerActor._
@@ -10,7 +9,8 @@ import com.vibes.ethereum.actors.Node
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
-
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object EvmPrimary {
   case class InternalBlockCreated(txList : mutable.ListBuffer[Transaction])
@@ -66,7 +66,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     case InitializeBlockchain(block: Block, accountList: ListBuffer[Account]) => initializeBlockchain(block, accountList)
     case CreateAccountEVM(account: Account) => createAccount(account)
     case GetGhostDepth() => {log.info("GET GHOST DEPTH") ; sender ! DepthSet}
-    case  UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; log.info("DEPTH-SET INitialized")}
+    case UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; log.info("DEPTH-SET INitialized"); sender ! true}
     case _ => unhandled(message = AnyRef)
   }
 
@@ -77,9 +77,23 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     val bId = DepthSet.getLeafBlock()
     val pBlk = redis.getBlock(bId.blockId)
     pBlk match {
-      case Some(pBlk) => {redis.putAccount(acc, pBlk.id)}
-      case None => {}
-    }
+      case Some(pBlk) => {
+        redis.putAccount(acc, pBlk.id, true)
+      }
+      case None => {
+        log.info("Depth Node not yet Initialized. Schedule a sleep of 2 sec and trying again ...")
+        context.system.scheduler.scheduleOnce(1 second) {
+          val bId = DepthSet.getLeafBlock()
+          val pBlk = redis.getBlock(bId.blockId)
+          pBlk match {
+            case Some(pBlk) => {
+              redis.putAccount(acc, pBlk.id, true)
+            }
+            case None => {
+              log.info("NO BLOCK INITIALIZED STILL. SKIPPING")
+            }}
+        }
+      }}
   }
 
   def initializeBlockchain(block: Block, accountList: ListBuffer[Account]) = {
@@ -88,7 +102,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     DepthSet.addLightBlock(lb)
     redis.putBlock(block)
     for (acc <- accountList) {
-      redis.putAccount(acc, block.id)
+      redis.putAccount(acc, block.id, true)
     }
     log.info("[" +  client.id + "]" +  " [initializeBlockchain] ===== BLOCKCHAIN INITIALITED FOR CLIENT ======")
   }
@@ -108,7 +122,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         worldState_= (redis.getWorldState(parentBlock.id))
         //txState_= (redis.getTxState(parentBlock.id))
         log.info("[" +  client.id + "]" +  " [blockVerify] Fetched World state of parent block")
-        log.info("[" +  client.id + "]" +  " [blockVerify] ## PARENT WORLD STATE:" + worldState.toString())
+        log.info("[" +  client.id + "]" +  " [blockVerify] ## PARENT WORLD STATE:" + worldState.keySet.size)
         if (blockComputation(block)) {
           log.info("[" +  client.id + "]" +  " [blockVerify] Block verified. BLOCK : " + block.id)
           accountingActor ! BlockVerified(startTime, parentBlock, propTime)}
@@ -144,15 +158,14 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     for(key <- accountsAffected.keysIterator) {
       log.info("[" +  client.id + "]" +  " [blockComputation] ****** UPDATE WORLD STATE BEGIN ******")
       val account = accountsAffected.get(key).get
-      redis.putAccount(account, block.id)
+      redis.putAccount(account, block.id, false)
       log.info("[" +  client.id + "]" +  " [blockComputation] Added account: " + account.address)
       // Update the WorldState with Updated Account
       redis.updateWorldState(account, parentBlock.id, block.id)
       log.info("[" +  client.id + "]" +  " [blockComputation] World State updated in redisDB ")
-      accountsAffected.remove(key)
       log.info("[" +  client.id + "]" +  " [blockComputation] ****** UPDATE WORLD STATE END ******")
     }
-
+    accountsAffected.clear()
     log.info("[" +  client.id + "]" +  " [blockComputation] ****** ADD TX TO BLOCK BEGIN ******")
     for (tx <- txList){
       redis.putTx(tx, block.id)
@@ -170,8 +183,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         redis.putTxEntry(key, addr, bal)
         log.info("[" +  client.id + "]" +  " [blockComputation] TX entry added. (key, addr, balance) = (" + key + "," + addr + "," + bal  + ")")
       }
-      txListLocalContext.remove(key)
     }
+    txListLocalContext.clear()
     log.info("[" +  client.id + "]" +  " [blockComputation] ****** ADD TX ENTRY TO DB END ******")
 
     //TODO: Update other fields in the block
@@ -187,7 +200,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     parentBlock_= (block)
     worldState_= (redis.getWorldState(block.id))
     //txState_=(redis.getTxState(block.id))
-    log.info("[" +  client.id + "]" +  " [blockComputation] NEW WORLD STATE : " + worldState.toString())
+    log.info("[" +  client.id + "]" +  " [blockComputation] NEW WORLD STATE : " + worldState.keySet.size)
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
     nodeActor ! PropogateToNeighbours(block)
@@ -207,7 +220,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
           parentBlock_= (pBlk); worldState_= (redis.getWorldState(pBlk.id))
           txState_=(redis.getTxState(pBlk.id))
           log.info("[" +  client.id + "]" +  " [Mining] Fetched world state from parent")
-          log.info("[" +  client.id + "]" +  " [Mining] WORLD STATE : " + worldState.toString())
+          log.info("[" +  client.id + "]" +  " [Mining] WORLD STATE : " + worldState.keySet.size)
         }
       case None => {}
     }
@@ -255,18 +268,18 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     log.info("[" +  client.id + "]" +  " [getOrElseAccount] GET ACCOUNT: " + accAddr)
     val ac = accountsAffected.getOrElse(accAddr, None)
     if(ac == None) {
-      log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "not present in local context.")
+      log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "ABSENT in local context.")
       //Not in local context. Get it from the WorldState
       val acWS = worldState.get(accAddr)
       if (acWS == None) {
-        log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "not present in WORLD STATE.")
+        log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "ABSENT in WORLD STATE.")
         return default}
       else {
-        log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "present in WORLD STATE.")
+        log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "FOUND in WORLD STATE.")
         return acWS.get}
     }
     else {
-      log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "present in local context.")
+      log.info("[" +  client.id + "]" +  " [getOrElseAccount] ACCOUNT: " + accAddr + "FOUND in local context.")
       return ac}
   }
 
@@ -367,6 +380,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         return false
       }
     }
+    log.info("[" +  client.id + "]" +  " [executeTx] WORLD STATE COUNT:" + worldState.keySet.size.toString)
     log.info("[" +  client.id + "]" +  " [executeTx] @@@@@ TX NOT EXECUTED. REASON : SENDER or RECEIVER not present in WORLD STATE. TX: " + tx.id)
     log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
     return false
@@ -380,8 +394,23 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     if (tx.nonce == 0) {
       tx.nonce_= (sender.nonce)
     }
+    /*
     if ((sender.nonce != 0) && (tx.nonce == sender.nonce) && (g0 <= tx.gasLimit)
       && (v0 <= sender.balance) && (tx.gasLimit <= (blockGasLimit - g0))) return true else return false
+    */
+    if ((sender.nonce != 0)) {
+      if(tx.nonce == sender.nonce) {
+        if(g0 <= tx.gasLimit) {
+          if(v0 <= sender.balance) {
+            if(tx.gasLimit <= (blockGasLimit - g0)) {
+              log.info("[" +  client.id + "]" +  " [isValidTx][SUCCESS]")
+              return true
+            } else {log.info("[" +  client.id + "]" +  " [isValidTx][FAILURE-5]")}
+          } else {log.info("[" +  client.id + "]" +  " [isValidTx][FAILURE-4]")}
+        } else {log.info("[" +  client.id + "]" +  " [isValidTx][FAILURE-3]")}
+      } else {log.info("[" +  client.id + "]" +  " [isValidTx][FAILURE-2]" + sender.nonce.toString + " , " + tx.nonce.toString )}
+    } else {log.info("[" +  client.id + "]" +  " [isValidTx][FAILURE-1]")}
+    return false
   }
 
 

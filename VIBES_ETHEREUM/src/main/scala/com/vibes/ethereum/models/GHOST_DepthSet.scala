@@ -24,6 +24,9 @@ class GHOST_DepthSet() {
       val blk = depthSet.toList(0)
       nodeMap.getOrElse(blk.blockId, new LightBlock("0x0", "0x0", 0))
     }
+    else if(depthSet.size == 0) {
+      return new LightBlock("0x0", "0x0", 0)
+    }
     else {
       val blk = Random.shuffle(depthSet.toList).take(1)(0)
       nodeMap.getOrElse(blk.blockId, new LightBlock("0x0", "0x0", 0))
