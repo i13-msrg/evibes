@@ -32,7 +32,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
   accountingActor ! EvmStarted
   var accountsAffected = new HashMap[String, Account]
   var txListLocalContext = new HashMap[String, HashMap[String, Float]]
-  val miner: Account = client.account
+  //val miner: Account = client.account
 
   //TODO: Defining a Genesis block and deciding on how the eth architecture will be created.: 1 node and then multiple or many nodes at once all having genesis block
   private var _parentBlock: Block = new Block(_transactionList = new mutable.ListBuffer[Transaction]) // There will be a genesis block here
@@ -66,7 +66,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     case InitializeBlockchain(block: Block, accountList: ListBuffer[Account]) => initializeBlockchain(block, accountList)
     case CreateAccountEVM(account: Account) => createAccount(account)
     case GetGhostDepth() => {log.info("GET GHOST DEPTH") ; sender ! DepthSet}
-    case UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; log.info("DEPTH-SET INitialized"); sender ! true}
+    case UpdateGhostDepth(depth: GHOST_DepthSet) => {DepthSet = depth; log.info("DEPTH-SET INitialized : " + DepthSet.nodeMap.keySet.size.toString); sender ! true}
     case _ => unhandled(message = AnyRef)
   }
 
@@ -124,8 +124,11 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         log.info("[" +  client.id + "]" +  " [blockVerify] Fetched World state of parent block")
         log.info("[" +  client.id + "]" +  " [blockVerify] ## PARENT WORLD STATE:" + worldState.keySet.size)
         if (blockComputation(block)) {
-          log.info("[" +  client.id + "]" +  " [blockVerify] Block verified. BLOCK : " + block.id)
-          accountingActor ! BlockVerified(startTime, parentBlock, propTime)}
+          log.info("[" +  client.id + "]" +  " [blockVerify] SUCCESSFULLY VERIFIED : " + block.id)
+          accountingActor ! BlockVerified(startTime, parentBlock, propTime)
+        } else {
+          log.info("[" +  client.id + "]" +  " [blockVerify] FAILURE WHILE VERIFYING : " + block.id)
+        }
       }
       case _ => {
         log.info("[" +  client.id + "]" +  " [blockVerify] Parent block not found in the Blockchain. DROPPING BLOCK" + block.toString)
@@ -138,6 +141,10 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     log.info("[" +  client.id + "]" +  "%%%%% BLOCK COMPUTATION STARTED %%%%%")
     redis.createWorldState(parentBlock.id,block.id)
     redis.createTxState(parentBlock.id,block.id)
+    // List of all the transactions originating here. Once the block is generated these transactions are propogated to neighbours.
+    // This is done to update the nonce of the transaction
+    val TxOrignatingHere = new ListBuffer[Transaction]
+
     log.info("[" +  client.id + "]" +  " [blockComputation] Created new World state")
 
     val starttime = System.currentTimeMillis() / 1000
@@ -149,8 +156,14 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
       log.info("[" +  client.id + "]" +  " [blockComputation] Empty tx list received from BLOCK ID: " + block.id); return false
     }
     for (tx <- txList) {
+      log.info("[" +  client.id + "]" +  " [blockComputation] TX-NONCE:" + tx.nonce)
       log.info("[" +  client.id + "]" +  " [blockComputation] Tx under consideration: " + tx.id)
-      executeTx(tx, miner, calculateBlockGasLimit(parentBlock.gasLimit), block.id)
+      val nonce: (Boolean, Int) = executeTx(tx, calculateBlockGasLimit(parentBlock.gasLimit), block.id)
+      if (tx.nonce != nonce._2 && tx.nonce == 0 && nonce._1)  {
+        //New transaction. Originates here
+        tx.nonce = nonce._2
+        TxOrignatingHere += tx
+      }
     }
 
     log.info("[" +  client.id + "]" +  " [blockComputation] Add affected accounts to redisDB")
@@ -204,6 +217,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     //TODO:Send a PropogateBlock Message to NetworkMgrActor
     accountingActor ! BlockPropogated
     nodeActor ! PropogateToNeighbours(block)
+    // Send the transactions that originate here to other nodes
+    for (tx <- TxOrignatingHere) {nodeActor ! PropogateToNeighboursTx(tx)}
     log.info("[" +  client.id + "]" +  "%%%%% BLOCK COMPUTATION ENDED %%%%%")
     return true
   }
@@ -237,7 +252,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
 
     block.parentHash = parentBlock.id
     block.gasLimit = calculateBlockGasLimit(parentBlock.gasLimit)
-    block.beneficiary = miner.address
+    block.beneficiary = client.account.address
     block.gasUsed = getGasUsed()
     block.number = getBlockNumber(parentBlock.number)
     block.difficulty = calculateDifficulty(block.number, parentBlock.difficulty, block.timestamp, parentBlock.timestamp)
@@ -246,6 +261,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     log.info("[" +  client.id + "]" +  " [Mining] BLOCK " + block.toString())
     log.info("[" +  client.id + "]" +  " [Mining] Starting Block computation while mining BLOCK ID: " + block.id)
     val result = blockComputation(block)
+    if(result) {log.info("[" +  client.id + "]" +  " [Mining] SUCCESSFULLY MINED " + block.id)}
+    else {log.info("[" +  client.id + "]" +  " [Mining] FAILURE WHILE MINING " + block.id)}
     log.info( "[" +  client.id + "]"  + "===========MINING ENDED===========")
     result
   }
@@ -285,7 +302,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
 
 
 
-  def executeTx(tx: Transaction, miner: Account, blockGasLimit: Float, blockId: String): Boolean ={
+  def executeTx(tx: Transaction, blockGasLimit: Float, blockId: String): (Boolean, Int) ={
     /*
     val sender = getLocalAccount(tx.sender).getOrElse(default = return )
     if (!sender.isInstanceOf[Account]) {log.info("Sender Or receiver are new. Skipping tx"); return}
@@ -318,11 +335,23 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  +" [executeTx] Fetch sender and receiver. STARTED")
     val senderAny = getOrElseAccount(tx.sender, blockId, None)
     val receiverAny = getOrElseAccount(tx.receiver, blockId, None)
+    val minerAny = getOrElseAccount(client.account.address, blockId, None)
+    var nonce = -1
+
     log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  + " [executeTx] Fetch sender and receiver. ENDED")
     if(senderAny.isInstanceOf[Account] & receiverAny.isInstanceOf[Account]) {
       val sender = senderAny.asInstanceOf[Account]
       val receiver = receiverAny.asInstanceOf[Account]
-      log.info("[" +  client.id + "]" + "TX [" +  tx.id + "]"  + " [executeTx] valid sender and receiver")
+      val miner = minerAny.asInstanceOf[Account]
+
+      // Update the return value of nonce
+      nonce = sender.nonce
+
+      log.info("[" +  client.id + "]" + "[" +  blockId + "]" + "TX [" +  tx.id + "]"  + " [executeTx] valid sender and receiver")
+      log.info("[" +  client.id + "]" + "[" +  blockId + "]" + "TX [" +  tx.id + "]"  + " [executeTx] SENDER ADDRESS :"
+        + sender.address + "BALANCE :" + sender.balance)
+      log.info("[" +  client.id + "]" + "[" +  blockId + "]" + "TX [" +  tx.id + "]"  + " [executeTx] RECEIVER ADDRESS :"
+        + receiver.address + "BALANCE" + receiver.balance)
 
       if (isValidTx(sender, tx, blockGasLimit)) {
         log.info("[" +  client.id + "]" +  "TX [" +  tx.id + "]"  + " [executeTx] valid Transaction")
@@ -369,7 +398,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         txListLocalContext.put(tx.id, accAffected)
         log.info("[" +  client.id + "]" +  " [executeTx] TRANSACTION EXEC SUCCESSFULLY. TX:" + tx.id)
         log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
-        return true
+        return (true, nonce)
       }
       else {
         log.info("[" +  client.id + "]" +  " [executeTx] invalid Transaction : " + tx.id + "added back to the txpool")
@@ -377,13 +406,13 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
         context.sender ! AddTxToPool(tx)
         log.info("[" +  client.id + "]" +  " [executeTx] @@@@@ TX NOT EXECUTED. REASON : INVALID TX: " + tx.id)
         log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
-        return false
+        return (false, nonce)
       }
     }
     log.info("[" +  client.id + "]" +  " [executeTx] WORLD STATE COUNT:" + worldState.keySet.size.toString)
     log.info("[" +  client.id + "]" +  " [executeTx] @@@@@ TX NOT EXECUTED. REASON : SENDER or RECEIVER not present in WORLD STATE. TX: " + tx.id)
     log.info("[" +  client.id + "]" +  " [executeTx] ===== %%%%% TRANSACTION EXEC ENDED %%%%%======")
-    return false
+    return (false, nonce)
   }
 
   def isValidTx(sender: Account, tx: Transaction, blockGasLimit: Float): Boolean = {

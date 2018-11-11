@@ -26,10 +26,10 @@ import scala.io.StdIn
 object Setting {
   val bootNodes: Int = 2
   val nodesNum: Int = 1
-  val txNum: Int = 20
+  val txNum: Int = 20000
   val accountsNum: Int = 10
   val bootAccNum: Int = 10
-  val txBatch: Int = 4
+  val txBatch: Int = 20
   val blockGasLimit: Float = 10
   val poolSize: Int = 100
   val minConn: Int = 1
@@ -39,7 +39,7 @@ object Setting {
   GenesisBlock.ommersHash_= ("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
   GenesisBlock.beneficiary_= ("0x0000000000000000000000000000000000000000")
   GenesisBlock.difficulty_= (17179869184L)
-  GenesisBlock.gasLimit_= (500000)
+  GenesisBlock.gasLimit_= (63000)
   GenesisBlock.gasUsed_= (0)
   GenesisBlock.number_= (0)
 }

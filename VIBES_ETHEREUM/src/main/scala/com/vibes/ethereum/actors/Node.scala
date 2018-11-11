@@ -30,6 +30,7 @@ object Node {
   case class CreateAccount(account: Account)
   case class ReturnGhostDepth(depth: GHOST_DepthSet)
   case class PropogateToNeighbours(block: Block)
+  case class PropogateToNeighboursTx(tx: Transaction)
 
   case class AddNeighbours(neighbours:HashMap[String, ActorRef])
   case class NeighbourCopyRequest(clientId: String)
@@ -103,7 +104,11 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
   import ethnode.AccountingActor._
 
   override def receive: Receive = {
-    case NewTx(tx) => {txPoolerActor ! AddTxToPool(tx); propogateToNeighboursTx(tx)}
+    case NewTx(tx) => {
+                        txPoolerActor ! AddTxToPool(tx)
+                        // Transaction does not orignate on this node.
+                        if(tx.nonce != 0 ) {propogateToNeighboursTx(tx)}
+                      }
     case NewBlock(block: Block) => {
       //compute proptime
       var startTime = System.currentTimeMillis() / 1000
@@ -129,6 +134,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     case BlockchainCopyRequest() => {copyRequest()}
     case BlockchainCopyResponse(clientId:String, blocks: ListBuffer[Block], depth: GHOST_DepthSet) => {blockchainCopyResponse(clientId, blocks, depth)}
     case ReturnGhostDepth(depth: GHOST_DepthSet) => {evmPrimaryActor ! UpdateGhostDepth(depth)}
+    case PropogateToNeighboursTx(tx: Transaction) => {propogateToNeighboursTx(tx)}
     case _ => unhandled(message = AnyRef)
   }
 
@@ -213,10 +219,10 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
       val txState = redis.getTxState(block.id,clientId)
       redis.putTxState(block.id, txState)
       for (acc <- stateMap.valuesIterator) {redis.putAccount(acc, block.id, true)}
-      implicit val timeout = Timeout(50 seconds)
-      val future = evmPrimaryActor ? UpdateGhostDepth(depth)
-      val success = Await.result(future, timeout.duration).asInstanceOf[Boolean]
     })
+    implicit val timeout = Timeout(50 seconds)
+    val future = evmPrimaryActor ? UpdateGhostDepth(depth)
+    val success = Await.result(future, timeout.duration).asInstanceOf[Boolean]
     log.info("$$$$$$$$$$$$$$$$BLOCKCHAIN COPY RESPONSE: RECEIVED")
   }
 
