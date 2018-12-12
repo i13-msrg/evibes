@@ -79,6 +79,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     pBlk match {
       case Some(pBlk) => {
         redis.putAccount(acc, pBlk.id, true)
+        log.info("====ACCOUNT CREATED =====")
       }
       case None => {
         log.info("Depth Node not yet Initialized. Schedule a sleep of 2 sec and trying again ...")
@@ -88,6 +89,7 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
           pBlk match {
             case Some(pBlk) => {
               redis.putAccount(acc, pBlk.id, true)
+              log.info("====ACCOUNT CREATED =====")
             }
             case None => {
               log.info("NO BLOCK INITIALIZED STILL. SKIPPING")
@@ -219,7 +221,8 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     nodeActor ! PropogateToNeighbours(block)
     // Send the transactions that originate here to other nodes
     for (tx <- TxOrignatingHere) {nodeActor ! PropogateToNeighboursTx(tx)}
-    log.info("[" +  client.id + "]" +  "%%%%% BLOCK COMPUTATION ENDED %%%%%")
+    log.info("[" +  client.id + "]" +  "%%%%% BLOCK COMPUTATION ENDED %%%%% :" + block.transactionList.length.toString)
+
     return true
   }
 
@@ -256,6 +259,12 @@ class EvmPrimary(client: Client, redis: RedisManager, accountingActor: ActorRef,
     block.gasUsed = getGasUsed()
     block.number = getBlockNumber(parentBlock.number)
     block.difficulty = calculateDifficulty(block.number, parentBlock.difficulty, block.timestamp, parentBlock.timestamp)
+    log.info("[" +  client.id + "]" +  "[" +  block.id + "]" + " [Mining] PARENT DIFFICULTY :  " + parentBlock.difficulty)
+    log.info("[" +  client.id + "]" +  "[" +  block.id  + "]" + " [Mining] PARENT GASLIMIT :  " + parentBlock.gasLimit)
+    log.info("[" +  client.id + "]" +  "[" +  block.id  + "]" + " [Mining] PARENT GASUSED :  " + parentBlock.gasUsed)
+    log.info("[" +  client.id + "]" +  "[" +  block.id  + "]" + " [Mining] CHILD DIFFICULTY :  " + block.difficulty)
+    log.info("[" +  client.id + "]" +  "[" +  block.id  + "]" + " [Mining] CHILD GASLIMIT :  " + block.gasLimit)
+    log.info("[" +  client.id + "]" +  "[" +  block.id  + "]" + " [Mining] CHILD GASUSED :  " + block.gasUsed)
     block.transactionList = txList
     log.info("[" +  client.id + "]" +  " [Mining] Updated Block fields while Mining")
     log.info("[" +  client.id + "]" +  " [Mining] BLOCK " + block.toString())

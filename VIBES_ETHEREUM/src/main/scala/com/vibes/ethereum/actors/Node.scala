@@ -63,12 +63,16 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
 
   def addNeighbours(neighbours: HashMap[String, ActorRef]): Unit = {
     val nodeList = neighbours.keys.toList
+    // Randomly select number of allowed neighbours
+    val nbrCount = Random.nextInt(setting.maxConn - setting.minConn) + setting.minConn
+    var count = nbrCount
     for(key <- nodeList) {
-      if(neighbourMap.contains(key) == false) {
+      if(neighbourMap.contains(key) == false && count > 0) {
         neighbourMap.put(key, neighbours.get(key).get)
         neighbourStatus.put(key, true)
         accountingActor ! NeighbourUpdate(nodeList.length)
         accountingActor ! NodeType
+        count -= 1
       }
     }
   }
@@ -223,7 +227,7 @@ class Node(client: Client, reducer: ActorRef, accountingActor: ActorRef, bootNod
     implicit val timeout = Timeout(50 seconds)
     val future = evmPrimaryActor ? UpdateGhostDepth(depth)
     val success = Await.result(future, timeout.duration).asInstanceOf[Boolean]
-    log.info("$$$$$$$$$$$$$$$$BLOCKCHAIN COPY RESPONSE: RECEIVED")
+    log.info("[" + clientId + "] SUCCESSFULLY INITIALIZED." )
   }
 
   override def unhandled(message: Any): Unit = {

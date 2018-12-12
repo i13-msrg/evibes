@@ -1,0 +1,1030 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="vibes_ethereum" default="all">
+  
+  
+  <property file="vibes_ethereum.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/*.yarb/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.swc"/>
+    <include name="*.zip"/>
+    <include name="*.egg"/>
+    <include name="*.ane"/>
+    <include name="*.jar"/>
+    <include name="*.ear"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <exclude name="**/?*.java"/>
+    <exclude name="**/?*.form"/>
+    <exclude name="**/?*.class"/>
+    <exclude name="**/?*.groovy"/>
+    <exclude name="**/?*.scala"/>
+    <exclude name="**/?*.flex"/>
+    <exclude name="**/?*.kt"/>
+    <exclude name="**/?*.clj"/>
+    <exclude name="**/?*.aj"/>
+  </patternset>
+  
+  <!-- JDK definitions -->
+  
+  <property name="jdk.bin.10_(1)" value="${jdk.home.10_(1)}/bin"/>
+  <path id="jdk.classpath.10_(1)">
+    <fileset dir="${jdk.home.10_(1)}">
+      <include name="../jdk-10.0.2!/java.activation"/>
+      <include name="../jdk-10.0.2!/java.base"/>
+      <include name="../jdk-10.0.2!/java.compiler"/>
+      <include name="../jdk-10.0.2!/java.corba"/>
+      <include name="../jdk-10.0.2!/java.datatransfer"/>
+      <include name="../jdk-10.0.2!/java.desktop"/>
+      <include name="../jdk-10.0.2!/java.instrument"/>
+      <include name="../jdk-10.0.2!/java.jnlp"/>
+      <include name="../jdk-10.0.2!/java.logging"/>
+      <include name="../jdk-10.0.2!/java.management"/>
+      <include name="../jdk-10.0.2!/java.management.rmi"/>
+      <include name="../jdk-10.0.2!/java.naming"/>
+      <include name="../jdk-10.0.2!/java.prefs"/>
+      <include name="../jdk-10.0.2!/java.rmi"/>
+      <include name="../jdk-10.0.2!/java.scripting"/>
+      <include name="../jdk-10.0.2!/java.se"/>
+      <include name="../jdk-10.0.2!/java.se.ee"/>
+      <include name="../jdk-10.0.2!/java.security.jgss"/>
+      <include name="../jdk-10.0.2!/java.security.sasl"/>
+      <include name="../jdk-10.0.2!/java.smartcardio"/>
+      <include name="../jdk-10.0.2!/java.sql"/>
+      <include name="../jdk-10.0.2!/java.sql.rowset"/>
+      <include name="../jdk-10.0.2!/java.transaction"/>
+      <include name="../jdk-10.0.2!/java.xml"/>
+      <include name="../jdk-10.0.2!/java.xml.bind"/>
+      <include name="../jdk-10.0.2!/java.xml.crypto"/>
+      <include name="../jdk-10.0.2!/java.xml.ws"/>
+      <include name="../jdk-10.0.2!/java.xml.ws.annotation"/>
+      <include name="../jdk-10.0.2!/javafx.base"/>
+      <include name="../jdk-10.0.2!/javafx.controls"/>
+      <include name="../jdk-10.0.2!/javafx.deploy"/>
+      <include name="../jdk-10.0.2!/javafx.fxml"/>
+      <include name="../jdk-10.0.2!/javafx.graphics"/>
+      <include name="../jdk-10.0.2!/javafx.media"/>
+      <include name="../jdk-10.0.2!/javafx.swing"/>
+      <include name="../jdk-10.0.2!/javafx.web"/>
+      <include name="../jdk-10.0.2!/jdk.accessibility"/>
+      <include name="../jdk-10.0.2!/jdk.aot"/>
+      <include name="../jdk-10.0.2!/jdk.attach"/>
+      <include name="../jdk-10.0.2!/jdk.charsets"/>
+      <include name="../jdk-10.0.2!/jdk.compiler"/>
+      <include name="../jdk-10.0.2!/jdk.crypto.cryptoki"/>
+      <include name="../jdk-10.0.2!/jdk.crypto.ec"/>
+      <include name="../jdk-10.0.2!/jdk.deploy"/>
+      <include name="../jdk-10.0.2!/jdk.deploy.controlpanel"/>
+      <include name="../jdk-10.0.2!/jdk.dynalink"/>
+      <include name="../jdk-10.0.2!/jdk.editpad"/>
+      <include name="../jdk-10.0.2!/jdk.hotspot.agent"/>
+      <include name="../jdk-10.0.2!/jdk.httpserver"/>
+      <include name="../jdk-10.0.2!/jdk.incubator.httpclient"/>
+      <include name="../jdk-10.0.2!/jdk.internal.ed"/>
+      <include name="../jdk-10.0.2!/jdk.internal.jvmstat"/>
+      <include name="../jdk-10.0.2!/jdk.internal.le"/>
+      <include name="../jdk-10.0.2!/jdk.internal.opt"/>
+      <include name="../jdk-10.0.2!/jdk.internal.vm.ci"/>
+      <include name="../jdk-10.0.2!/jdk.internal.vm.compiler"/>
+      <include name="../jdk-10.0.2!/jdk.internal.vm.compiler.management"/>
+      <include name="../jdk-10.0.2!/jdk.jartool"/>
+      <include name="../jdk-10.0.2!/jdk.javadoc"/>
+      <include name="../jdk-10.0.2!/jdk.javaws"/>
+      <include name="../jdk-10.0.2!/jdk.jcmd"/>
+      <include name="../jdk-10.0.2!/jdk.jconsole"/>
+      <include name="../jdk-10.0.2!/jdk.jdeps"/>
+      <include name="../jdk-10.0.2!/jdk.jdi"/>
+      <include name="../jdk-10.0.2!/jdk.jdwp.agent"/>
+      <include name="../jdk-10.0.2!/jdk.jfr"/>
+      <include name="../jdk-10.0.2!/jdk.jlink"/>
+      <include name="../jdk-10.0.2!/jdk.jshell"/>
+      <include name="../jdk-10.0.2!/jdk.jsobject"/>
+      <include name="../jdk-10.0.2!/jdk.jstatd"/>
+      <include name="../jdk-10.0.2!/jdk.localedata"/>
+      <include name="../jdk-10.0.2!/jdk.management"/>
+      <include name="../jdk-10.0.2!/jdk.management.agent"/>
+      <include name="../jdk-10.0.2!/jdk.management.cmm"/>
+      <include name="../jdk-10.0.2!/jdk.management.jfr"/>
+      <include name="../jdk-10.0.2!/jdk.management.resource"/>
+      <include name="../jdk-10.0.2!/jdk.naming.dns"/>
+      <include name="../jdk-10.0.2!/jdk.naming.rmi"/>
+      <include name="../jdk-10.0.2!/jdk.net"/>
+      <include name="../jdk-10.0.2!/jdk.pack"/>
+      <include name="../jdk-10.0.2!/jdk.packager"/>
+      <include name="../jdk-10.0.2!/jdk.packager.services"/>
+      <include name="../jdk-10.0.2!/jdk.plugin"/>
+      <include name="../jdk-10.0.2!/jdk.plugin.server"/>
+      <include name="../jdk-10.0.2!/jdk.rmic"/>
+      <include name="../jdk-10.0.2!/jdk.scripting.nashorn"/>
+      <include name="../jdk-10.0.2!/jdk.scripting.nashorn.shell"/>
+      <include name="../jdk-10.0.2!/jdk.sctp"/>
+      <include name="../jdk-10.0.2!/jdk.security.auth"/>
+      <include name="../jdk-10.0.2!/jdk.security.jgss"/>
+      <include name="../jdk-10.0.2!/jdk.snmp"/>
+      <include name="../jdk-10.0.2!/jdk.unsupported"/>
+      <include name="../jdk-10.0.2!/jdk.xml.bind"/>
+      <include name="../jdk-10.0.2!/jdk.xml.dom"/>
+      <include name="../jdk-10.0.2!/jdk.xml.ws"/>
+      <include name="../jdk-10.0.2!/jdk.zipfs"/>
+      <include name="../jdk-10.0.2!/oracle.desktop"/>
+      <include name="../jdk-10.0.2!/oracle.net"/>
+    </fileset>
+  </path>
+  
+  <property name="project.jdk.home" value="${jdk.home.10_(1)}"/>
+  <property name="project.jdk.bin" value="${jdk.bin.10_(1)}"/>
+  <property name="project.jdk.classpath" value="jdk.classpath.10_(1)"/>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.sbt:_ch.megard:akka-http-cors_2.12:0.2.2:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/ch.megard/akka-http-cors_2.12/jars/akka-http-cors_2.12-0.2.2.jar"/>
+  </path>
+  
+  <path id="library.sbt:_ch.qos.logback:logback-classic:1.2.3:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/ch.qos.logback/logback-classic/jars/logback-classic-1.2.3.jar"/>
+  </path>
+  
+  <path id="library.sbt:_ch.qos.logback:logback-core:1.2.3:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/ch.qos.logback/logback-core/jars/logback-core-1.2.3.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-actor-typed_2.12:2.5.17:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-actor-typed_2.12/jars/akka-actor-typed_2.12-2.5.17.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-actor_2.12:2.5.17:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-actor_2.12/jars/akka-actor_2.12-2.5.17.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-http-core_2.12:10.1.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-http-core_2.12/jars/akka-http-core_2.12-10.1.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-http-spray-json_2.12:10.1.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-http-spray-json_2.12/jars/akka-http-spray-json_2.12-10.1.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-http-testkit_2.12:10.1.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-http-testkit_2.12/jars/akka-http-testkit_2.12-10.1.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-http_2.12:10.1.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-http_2.12/jars/akka-http_2.12-10.1.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-parsing_2.12:10.1.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-parsing_2.12/jars/akka-parsing_2.12-10.1.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-protobuf_2.12:2.5.17:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-protobuf_2.12/jars/akka-protobuf_2.12-2.5.17.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-slf4j_2.12:2.5.17:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-slf4j_2.12/jars/akka-slf4j_2.12-2.5.17.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-stream-testkit_2.12:2.5.12:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-stream-testkit_2.12/jars/akka-stream-testkit_2.12-2.5.12.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-stream-typed_2.12:2.5.17:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-stream-typed_2.12/jars/akka-stream-typed_2.12-2.5.17.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-stream_2.12:2.5.17:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-stream_2.12/jars/akka-stream_2.12-2.5.17.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe.akka:akka-testkit_2.12:2.5.14:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe.akka/akka-testkit_2.12/jars/akka-testkit_2.12-2.5.14.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe:config:1.3.3:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe/config/bundles/config-1.3.3.jar"/>
+  </path>
+  
+  <path id="library.sbt:_com.typesafe:ssl-config-core_2.12:0.2.4:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/com.typesafe/ssl-config-core_2.12/bundles/ssl-config-core_2.12-0.2.4.jar"/>
+  </path>
+  
+  <path id="library.sbt:_commons-pool:commons-pool:1.6:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/commons-pool/commons-pool/jars/commons-pool-1.6.jar"/>
+  </path>
+  
+  <path id="library.sbt:_io.spray:spray-json_2.12:1.3.4:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/io.spray/spray-json_2.12/bundles/spray-json_2.12-1.3.4.jar"/>
+  </path>
+  
+  <path id="library.sbt:_net.debasishg:redisclient_2.12:3.7:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/net.debasishg/redisclient_2.12/jars/redisclient_2.12-3.7.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.reactivestreams:reactive-streams:1.0.2:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.reactivestreams/reactive-streams/jars/reactive-streams-1.0.2.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scala-lang.modules:scala-java8-compat_2.12:0.8.0:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.scala-lang.modules/scala-java8-compat_2.12/bundles/scala-java8-compat_2.12-0.8.0.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12/bundles/scala-parser-combinators_2.12-1.1.1.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scala-lang.modules:scala-xml_2.12:1.0.6:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scala-lang:scala-library:2.12.6:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-library.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scala-lang:scala-reflect:2.12.6:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-reflect.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scalactic:scalactic_2.12:3.0.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.scalactic/scalactic_2.12/bundles/scalactic_2.12-3.0.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.scalatest:scalatest_2.12:3.0.5:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.scalatest/scalatest_2.12/bundles/scalatest_2.12-3.0.5.jar"/>
+  </path>
+  
+  <path id="library.sbt:_org.slf4j:slf4j-api:1.7.25:jar.classpath">
+    <pathelement location="${basedir}/../../../../../../.ivy2/cache/org.slf4j/slf4j-api/jars/slf4j-api-1.7.25.jar"/>
+  </path>
+  
+  
+  <!-- Global Libraries -->
+  <!-- Register Custom Compiler Taskdefs -->
+  <property name="javac2.home" value="${idea.home}/lib"/>
+  <path id="javac2.classpath">
+    <fileset dir="${javac2.home}">
+      <include name="javac2.jar"/>
+      <include name="jdom.jar"/>
+      <include name="asm-all*.jar"/>
+      <include name="forms-*.jar"/>
+    </fileset>
+  </path>
+  <target name="register.custom.compilers">
+    <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.classpath"/>
+    <taskdef name="instrumentIdeaExtensions" classname="com.intellij.ant.InstrumentIdeaExtensions" classpathref="javac2.classpath"/>
+  </target>
+  
+  <!-- Modules -->
+  
+  
+  <!-- Module VIBES_ETHEREUM -->
+  
+  <dirname property="module.vibes_ethereum.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.vibes_ethereum" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.vibes_ethereum" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.vibes_ethereum" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.vibes_ethereum" value="-encoding UTF-8 -source 10 -target 10 ${compiler.args}"/>
+  
+  <property name="vibes_ethereum.output.dir" value="${module.vibes_ethereum.basedir}/target/scala-2.12/classes"/>
+  <property name="vibes_ethereum.testoutput.dir" value="${module.vibes_ethereum.basedir}/target/scala-2.12/test-classes"/>
+  
+  <path id="vibes_ethereum.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="vibes_ethereum.module.production.classpath">
+    <path refid="${module.jdk.classpath.vibes_ethereum}"/>
+    <path refid="library.sbt:_org.scala-lang:scala-library:2.12.6:jar.classpath"/>
+    <path refid="library.sbt:_ch.megard:akka-http-cors_2.12:0.2.2:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-slf4j_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_io.spray:spray-json_2.12:1.3.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-spray-json_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1:jar.classpath"/>
+    <path refid="library.sbt:_org.reactivestreams:reactive-streams:1.0.2:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-protobuf_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-parsing_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-core_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:ssl-config-core_2.12:0.2.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:config:1.3.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-core:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-classic:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_org.slf4j:slf4j-api:1.7.25:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-java8-compat_2.12:0.8.0:jar.classpath"/>
+    <path refid="library.sbt:_net.debasishg:redisclient_2.12:3.7:jar.classpath"/>
+    <path refid="library.sbt:_commons-pool:commons-pool:1.6:jar.classpath"/>
+  </path>
+  
+  <path id="vibes_ethereum.runtime.production.module.classpath">
+    <pathelement location="${vibes_ethereum.output.dir}"/>
+    <path refid="library.sbt:_org.scala-lang:scala-library:2.12.6:jar.classpath"/>
+    <path refid="library.sbt:_ch.megard:akka-http-cors_2.12:0.2.2:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-slf4j_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_io.spray:spray-json_2.12:1.3.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-spray-json_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1:jar.classpath"/>
+    <path refid="library.sbt:_org.reactivestreams:reactive-streams:1.0.2:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-protobuf_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-parsing_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-core_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:ssl-config-core_2.12:0.2.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:config:1.3.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-core:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-classic:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_org.slf4j:slf4j-api:1.7.25:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-java8-compat_2.12:0.8.0:jar.classpath"/>
+    <path refid="library.sbt:_net.debasishg:redisclient_2.12:3.7:jar.classpath"/>
+    <path refid="library.sbt:_commons-pool:commons-pool:1.6:jar.classpath"/>
+  </path>
+  
+  <path id="vibes_ethereum.module.classpath">
+    <path refid="${module.jdk.classpath.vibes_ethereum}"/>
+    <pathelement location="${vibes_ethereum.output.dir}"/>
+    <path refid="library.sbt:_org.scala-lang:scala-library:2.12.6:jar.classpath"/>
+    <path refid="library.sbt:_ch.megard:akka-http-cors_2.12:0.2.2:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang:scala-reflect:2.12.6:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-slf4j_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_io.spray:spray-json_2.12:1.3.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-spray-json_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1:jar.classpath"/>
+    <path refid="library.sbt:_org.reactivestreams:reactive-streams:1.0.2:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream-testkit_2.12:2.5.12:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-protobuf_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-parsing_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-testkit_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-core_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:ssl-config-core_2.12:0.2.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:config:1.3.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-core:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-classic:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_org.slf4j:slf4j-api:1.7.25:jar.classpath"/>
+    <path refid="library.sbt:_org.scalatest:scalatest_2.12:3.0.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scalactic:scalactic_2.12:3.0.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-xml_2.12:1.0.6:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-java8-compat_2.12:0.8.0:jar.classpath"/>
+    <path refid="library.sbt:_net.debasishg:redisclient_2.12:3.7:jar.classpath"/>
+    <path refid="library.sbt:_commons-pool:commons-pool:1.6:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-testkit_2.12:2.5.14:jar.classpath"/>
+  </path>
+  
+  <path id="vibes_ethereum.runtime.module.classpath">
+    <pathelement location="${vibes_ethereum.testoutput.dir}"/>
+    <pathelement location="${vibes_ethereum.output.dir}"/>
+    <path refid="library.sbt:_org.scala-lang:scala-library:2.12.6:jar.classpath"/>
+    <path refid="library.sbt:_ch.megard:akka-http-cors_2.12:0.2.2:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang:scala-reflect:2.12.6:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-slf4j_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_io.spray:spray-json_2.12:1.3.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-spray-json_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1:jar.classpath"/>
+    <path refid="library.sbt:_org.reactivestreams:reactive-streams:1.0.2:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-stream-testkit_2.12:2.5.12:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-protobuf_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-parsing_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-testkit_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-http-core_2.12:10.1.5:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-actor-typed_2.12:2.5.17:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:ssl-config-core_2.12:0.2.4:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe:config:1.3.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-core:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_ch.qos.logback:logback-classic:1.2.3:jar.classpath"/>
+    <path refid="library.sbt:_org.slf4j:slf4j-api:1.7.25:jar.classpath"/>
+    <path refid="library.sbt:_org.scalatest:scalatest_2.12:3.0.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scalactic:scalactic_2.12:3.0.5:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-xml_2.12:1.0.6:jar.classpath"/>
+    <path refid="library.sbt:_org.scala-lang.modules:scala-java8-compat_2.12:0.8.0:jar.classpath"/>
+    <path refid="library.sbt:_net.debasishg:redisclient_2.12:3.7:jar.classpath"/>
+    <path refid="library.sbt:_commons-pool:commons-pool:1.6:jar.classpath"/>
+    <path refid="library.sbt:_com.typesafe.akka:akka-testkit_2.12:2.5.14:jar.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.vibes_ethereum">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.vibes_ethereum">
+    <patternset refid="excluded.from.module.vibes_ethereum"/>
+  </patternset>
+  
+  <path id="vibes_ethereum.module.sourcepath">
+    <dirset dir="${module.vibes_ethereum.basedir}">
+      <include name="src/main/scala"/>
+      <include name="src/main/resources"/>
+    </dirset>
+  </path>
+  
+  <path id="vibes_ethereum.module.test.sourcepath">
+    <dirset dir="${module.vibes_ethereum.basedir}">
+      <include name="src/test/scala"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.vibes_ethereum" depends="compile.module.vibes_ethereum.production,compile.module.vibes_ethereum.tests" description="Compile module VIBES_ETHEREUM"/>
+  
+  <target name="compile.module.vibes_ethereum.production" depends="register.custom.compilers" description="Compile module VIBES_ETHEREUM; production classes">
+    <mkdir dir="${vibes_ethereum.output.dir}"/>
+    <javac2 destdir="${vibes_ethereum.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.vibes_ethereum}/javac">
+      <compilerarg line="${compiler.args.vibes_ethereum}"/>
+      <bootclasspath refid="vibes_ethereum.module.bootclasspath"/>
+      <classpath refid="vibes_ethereum.module.production.classpath"/>
+      <src refid="vibes_ethereum.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.vibes_ethereum"/>
+    </javac2>
+    
+    <copy todir="${vibes_ethereum.output.dir}">
+      <fileset dir="${module.vibes_ethereum.basedir}/src/main/scala">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+      <fileset dir="${module.vibes_ethereum.basedir}/src/main/resources">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.vibes_ethereum.tests" depends="register.custom.compilers,compile.module.vibes_ethereum.production" description="compile module VIBES_ETHEREUM; test classes" unless="skip.tests">
+    <mkdir dir="${vibes_ethereum.testoutput.dir}"/>
+    <javac2 destdir="${vibes_ethereum.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.vibes_ethereum}/javac">
+      <compilerarg line="${compiler.args.vibes_ethereum}"/>
+      <bootclasspath refid="vibes_ethereum.module.bootclasspath"/>
+      <classpath refid="vibes_ethereum.module.classpath"/>
+      <src refid="vibes_ethereum.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.vibes_ethereum"/>
+    </javac2>
+    
+    <copy todir="${vibes_ethereum.testoutput.dir}">
+      <fileset dir="${module.vibes_ethereum.basedir}/src/test/scala">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.vibes_ethereum" description="cleanup module">
+    <delete dir="${vibes_ethereum.output.dir}"/>
+    <delete dir="${vibes_ethereum.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module vibes_ethereum-build -->
+  
+  <dirname property="module.vibes_ethereum-build.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.vibes_ethereum-build" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.vibes_ethereum-build" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.vibes_ethereum-build" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.vibes_ethereum-build" value="-encoding UTF-8 -source 10 -target 10 ${compiler.args}"/>
+  
+  <property name="vibes_ethereum-build.output.dir" value="${module.vibes_ethereum-build.basedir}/project/target/idea-classes"/>
+  <property name="vibes_ethereum-build.testoutput.dir" value="${module.vibes_ethereum-build.basedir}/project/target/idea-test-classes"/>
+  
+  <path id="vibes_ethereum-build.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="vibes_ethereum-build.module.production.classpath">
+    <path refid="${module.jdk.classpath.vibes_ethereum-build}"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/jline.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-compiler.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-library.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-reflect.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-xml_2.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/actions_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/apple-file-events-1.3.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/caffeine-2.5.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/collections_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/command_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/compiler-interface-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/completion_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/config-1.2.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/core-macros_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/disruptor-3.3.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse-utils_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-core_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-okhttp_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/io_2.12-1.1.10.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ipcsocket-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ivy-2.3.0-sbt-b18f59ea3bc914a297bb6f1a4f7fb0ace399e310.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jawn-parser_2.12-0.10.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jline-2.14.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-platform-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jsch-0.1.54.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/launcher-interface-1.0.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/lenses_2.12-0.4.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-core_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-ivy_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-api-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-core-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-slf4j-impl-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/logic_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main-settings_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-urlconnection-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okio-1.12.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protobuf-java-3.3.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protocol_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/reactive-streams-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/run_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbinary_2.12-0.4.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbt-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-parser-combinators_2.12-1.0.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-reflect-2.12.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-xml_2.12-1.0.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-caffeine_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-core_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalapb-runtime_2.12-0.6.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/shaded-scalajson_2.12-1.0.0-M4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-core_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-murmurhash_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-scalajson_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/slf4j-api-1.7.25.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sourcecode_2.12-0.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ssl-config-core_2.12-0.2.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/task-system_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/tasks_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/template-resolver-0.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-agent-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-interface-1.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/testing_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-cache_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-control_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-interface-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-logging_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-position_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-relation_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-tracking_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-apiinfo_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classfile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classpath_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-ivy-integration_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-persist_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc_2.12-1.1.7.jar"/>
+  </path>
+  
+  <path id="vibes_ethereum-build.runtime.production.module.classpath">
+    <pathelement location="${vibes_ethereum-build.output.dir}"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/jline.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-compiler.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-library.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-reflect.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-xml_2.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/actions_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/apple-file-events-1.3.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/caffeine-2.5.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/collections_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/command_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/compiler-interface-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/completion_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/config-1.2.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/core-macros_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/disruptor-3.3.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse-utils_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-core_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-okhttp_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/io_2.12-1.1.10.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ipcsocket-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ivy-2.3.0-sbt-b18f59ea3bc914a297bb6f1a4f7fb0ace399e310.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jawn-parser_2.12-0.10.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jline-2.14.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-platform-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jsch-0.1.54.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/launcher-interface-1.0.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/lenses_2.12-0.4.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-core_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-ivy_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-api-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-core-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-slf4j-impl-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/logic_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main-settings_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-urlconnection-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okio-1.12.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protobuf-java-3.3.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protocol_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/reactive-streams-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/run_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbinary_2.12-0.4.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbt-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-parser-combinators_2.12-1.0.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-reflect-2.12.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-xml_2.12-1.0.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-caffeine_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-core_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalapb-runtime_2.12-0.6.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/shaded-scalajson_2.12-1.0.0-M4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-core_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-murmurhash_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-scalajson_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/slf4j-api-1.7.25.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sourcecode_2.12-0.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ssl-config-core_2.12-0.2.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/task-system_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/tasks_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/template-resolver-0.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-agent-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-interface-1.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/testing_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-cache_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-control_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-interface-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-logging_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-position_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-relation_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-tracking_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-apiinfo_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classfile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classpath_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-ivy-integration_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-persist_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc_2.12-1.1.7.jar"/>
+  </path>
+  
+  <path id="vibes_ethereum-build.module.classpath">
+    <path refid="${module.jdk.classpath.vibes_ethereum-build}"/>
+    <pathelement location="${vibes_ethereum-build.output.dir}"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/jline.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-compiler.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-library.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-reflect.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-xml_2.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/actions_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/apple-file-events-1.3.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/caffeine-2.5.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/collections_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/command_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/compiler-interface-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/completion_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/config-1.2.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/core-macros_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/disruptor-3.3.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse-utils_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-core_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-okhttp_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/io_2.12-1.1.10.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ipcsocket-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ivy-2.3.0-sbt-b18f59ea3bc914a297bb6f1a4f7fb0ace399e310.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jawn-parser_2.12-0.10.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jline-2.14.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-platform-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jsch-0.1.54.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/launcher-interface-1.0.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/lenses_2.12-0.4.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-core_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-ivy_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-api-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-core-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-slf4j-impl-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/logic_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main-settings_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-urlconnection-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okio-1.12.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protobuf-java-3.3.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protocol_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/reactive-streams-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/run_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbinary_2.12-0.4.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbt-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-parser-combinators_2.12-1.0.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-reflect-2.12.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-xml_2.12-1.0.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-caffeine_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-core_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalapb-runtime_2.12-0.6.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/shaded-scalajson_2.12-1.0.0-M4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-core_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-murmurhash_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-scalajson_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/slf4j-api-1.7.25.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sourcecode_2.12-0.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ssl-config-core_2.12-0.2.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/task-system_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/tasks_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/template-resolver-0.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-agent-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-interface-1.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/testing_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-cache_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-control_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-interface-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-logging_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-position_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-relation_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-tracking_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-apiinfo_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classfile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classpath_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-ivy-integration_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-persist_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc_2.12-1.1.7.jar"/>
+  </path>
+  
+  <path id="vibes_ethereum-build.runtime.module.classpath">
+    <pathelement location="${vibes_ethereum-build.testoutput.dir}"/>
+    <pathelement location="${vibes_ethereum-build.output.dir}"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/jline.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-compiler.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-library.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-reflect.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/lib/scala-xml_2.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/actions_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/apple-file-events-1.3.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/caffeine-2.5.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/collections_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/command_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/compiler-interface-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/completion_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/config-1.2.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/core-macros_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/disruptor-3.3.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse-utils_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/fastparse_2.12-0.4.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-core_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/gigahorse-okhttp_2.12-0.3.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/io_2.12-1.1.10.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ipcsocket-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ivy-2.3.0-sbt-b18f59ea3bc914a297bb6f1a4f7fb0ace399e310.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jawn-parser_2.12-0.10.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jline-2.14.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jna-platform-4.5.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/jsch-0.1.54.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/launcher-interface-1.0.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/lenses_2.12-0.4.12.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-core_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/librarymanagement-ivy_2.12-1.1.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-api-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-core-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/log4j-slf4j-impl-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/logic_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main-settings_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/main_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okhttp-urlconnection-3.7.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/okio-1.12.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protobuf-java-3.3.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/protocol_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/reactive-streams-1.0.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/run_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbinary_2.12-0.4.4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sbt-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-parser-combinators_2.12-1.0.5.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-reflect-2.12.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scala-xml_2.12-1.0.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-caffeine_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalacache-core_2.12-0.20.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/scalapb-runtime_2.12-0.6.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/shaded-scalajson_2.12-1.0.0-M4.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-core_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-murmurhash_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sjson-new-scalajson_2.12-0.8.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/slf4j-api-1.7.25.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/sourcecode_2.12-0.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/ssl-config-core_2.12-0.2.2.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/task-system_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/tasks_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/template-resolver-0.1.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-agent-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/test-interface-1.0.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/testing_2.12-1.1.6.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-cache_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-control_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-interface-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-logging_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-position_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-relation_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/util-tracking_2.12-1.1.3.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-apiinfo_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classfile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-classpath_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-compile_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-core_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-ivy-integration_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc-persist_2.12-1.1.7.jar"/>
+    <pathelement location="${basedir}/../../../../../../.sbt/boot/scala-2.12.6/org.scala-sbt/sbt/1.1.6/zinc_2.12-1.1.7.jar"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.vibes_ethereum-build">
+    <patternset refid="ignored.files"/>
+    <exclude name="target/**"/>
+    <exclude name="target/streams/**"/>
+    <exclude name="target/streams/$global/**"/>
+    <exclude name="target/streams/$global/ivySbt/**"/>
+    <exclude name="target/streams/$global/ivySbt/$global/**"/>
+    <exclude name="target/streams/$global/ivySbt/$global/streams/**"/>
+    <exclude name="target/streams/$global/update/**"/>
+    <exclude name="target/streams/$global/update/$global/**"/>
+    <exclude name="target/streams/$global/update/$global/streams/**"/>
+    <exclude name="target/streams/$global/update/$global/streams/update_cache_2.12/**"/>
+    <exclude name="target/streams/$global/$global/**"/>
+    <exclude name="target/streams/$global/$global/$global/**"/>
+    <exclude name="target/streams/$global/$global/$global/streams/**"/>
+    <exclude name="target/streams/$global/ivyConfiguration/**"/>
+    <exclude name="target/streams/$global/ivyConfiguration/$global/**"/>
+    <exclude name="target/streams/$global/ivyConfiguration/$global/streams/**"/>
+    <exclude name="target/streams/$global/projectDescriptors/**"/>
+    <exclude name="target/streams/$global/projectDescriptors/$global/**"/>
+    <exclude name="target/streams/$global/projectDescriptors/$global/streams/**"/>
+    <exclude name="target/streams/$global/dependencyPositions/**"/>
+    <exclude name="target/streams/$global/dependencyPositions/$global/**"/>
+    <exclude name="target/streams/$global/dependencyPositions/$global/streams/**"/>
+    <exclude name="target/streams/$global/dependencyPositions/$global/streams/update_cache_2.12/**"/>
+    <exclude name="target/streams/compile/**"/>
+    <exclude name="target/streams/compile/$global/**"/>
+    <exclude name="target/streams/compile/$global/$global/**"/>
+    <exclude name="target/streams/compile/$global/$global/discoveredMainClasses/**"/>
+    <exclude name="target/streams/compile/compile/**"/>
+    <exclude name="target/streams/compile/compile/$global/**"/>
+    <exclude name="target/streams/compile/compile/$global/streams/**"/>
+    <exclude name="target/streams/compile/copyResources/**"/>
+    <exclude name="target/streams/compile/copyResources/$global/**"/>
+    <exclude name="target/streams/compile/copyResources/$global/streams/**"/>
+    <exclude name="target/streams/compile/unmanagedJars/**"/>
+    <exclude name="target/streams/compile/unmanagedJars/$global/**"/>
+    <exclude name="target/streams/compile/unmanagedJars/$global/streams/**"/>
+    <exclude name="target/streams/compile/compileIncSetup/**"/>
+    <exclude name="target/streams/compile/compileIncSetup/$global/**"/>
+    <exclude name="target/streams/compile/compileIncSetup/$global/streams/**"/>
+    <exclude name="target/streams/compile/exportedProducts/**"/>
+    <exclude name="target/streams/compile/exportedProducts/$global/**"/>
+    <exclude name="target/streams/compile/exportedProducts/$global/streams/**"/>
+    <exclude name="target/streams/compile/managedClasspath/**"/>
+    <exclude name="target/streams/compile/managedClasspath/$global/**"/>
+    <exclude name="target/streams/compile/managedClasspath/$global/streams/**"/>
+    <exclude name="target/streams/compile/compileIncremental/**"/>
+    <exclude name="target/streams/compile/compileIncremental/$global/**"/>
+    <exclude name="target/streams/compile/compileIncremental/$global/streams/**"/>
+    <exclude name="target/streams/compile/unmanagedClasspath/**"/>
+    <exclude name="target/streams/compile/unmanagedClasspath/$global/**"/>
+    <exclude name="target/streams/compile/unmanagedClasspath/$global/streams/**"/>
+    <exclude name="target/streams/compile/dependencyClasspath/**"/>
+    <exclude name="target/streams/compile/dependencyClasspath/$global/**"/>
+    <exclude name="target/streams/compile/dependencyClasspath/$global/streams/**"/>
+    <exclude name="target/streams/compile/externalDependencyClasspath/**"/>
+    <exclude name="target/streams/compile/externalDependencyClasspath/$global/**"/>
+    <exclude name="target/streams/compile/externalDependencyClasspath/$global/streams/**"/>
+    <exclude name="target/streams/compile/internalDependencyClasspath/**"/>
+    <exclude name="target/streams/compile/internalDependencyClasspath/$global/**"/>
+    <exclude name="target/streams/compile/internalDependencyClasspath/$global/streams/**"/>
+    <exclude name="target/streams/runtime/**"/>
+    <exclude name="target/streams/runtime/fullClasspath/**"/>
+    <exclude name="target/streams/runtime/fullClasspath/$global/**"/>
+    <exclude name="target/streams/runtime/fullClasspath/$global/streams/**"/>
+    <exclude name="target/streams/runtime/unmanagedJars/**"/>
+    <exclude name="target/streams/runtime/unmanagedJars/$global/**"/>
+    <exclude name="target/streams/runtime/unmanagedJars/$global/streams/**"/>
+    <exclude name="target/streams/runtime/exportedProducts/**"/>
+    <exclude name="target/streams/runtime/exportedProducts/$global/**"/>
+    <exclude name="target/streams/runtime/exportedProducts/$global/streams/**"/>
+    <exclude name="target/streams/runtime/managedClasspath/**"/>
+    <exclude name="target/streams/runtime/managedClasspath/$global/**"/>
+    <exclude name="target/streams/runtime/managedClasspath/$global/streams/**"/>
+    <exclude name="target/streams/runtime/unmanagedClasspath/**"/>
+    <exclude name="target/streams/runtime/unmanagedClasspath/$global/**"/>
+    <exclude name="target/streams/runtime/unmanagedClasspath/$global/streams/**"/>
+    <exclude name="target/streams/runtime/dependencyClasspath/**"/>
+    <exclude name="target/streams/runtime/dependencyClasspath/$global/**"/>
+    <exclude name="target/streams/runtime/dependencyClasspath/$global/streams/**"/>
+    <exclude name="target/streams/runtime/externalDependencyClasspath/**"/>
+    <exclude name="target/streams/runtime/externalDependencyClasspath/$global/**"/>
+    <exclude name="target/streams/runtime/externalDependencyClasspath/$global/streams/**"/>
+    <exclude name="target/streams/runtime/internalDependencyClasspath/**"/>
+    <exclude name="target/streams/runtime/internalDependencyClasspath/$global/**"/>
+    <exclude name="target/streams/runtime/internalDependencyClasspath/$global/streams/**"/>
+    <exclude name="target/scala-2.12/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/default/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/default/vibes_ethereum-build/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/default/vibes_ethereum-build/scala_2.12/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/default/vibes_ethereum-build/scala_2.12/sbt_1.0/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/default/vibes_ethereum-build/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/**"/>
+    <exclude name="target/scala-2.12/sbt-1.0/resolution-cache/reports/**"/>
+    <exclude name="target/config-classes/**"/>
+    <exclude name="project/target/**"/>
+    <exclude name="project/target/config-classes/**"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.vibes_ethereum-build">
+    <patternset refid="excluded.from.module.vibes_ethereum-build"/>
+  </patternset>
+  
+  <path id="vibes_ethereum-build.module.sourcepath">
+    <dirset dir="${module.vibes_ethereum-build.basedir}">
+      <include name="project"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.vibes_ethereum-build" depends="compile.module.vibes_ethereum-build.production,compile.module.vibes_ethereum-build.tests" description="Compile module vibes_ethereum-build"/>
+  
+  <target name="compile.module.vibes_ethereum-build.production" depends="register.custom.compilers" description="Compile module vibes_ethereum-build; production classes">
+    <mkdir dir="${vibes_ethereum-build.output.dir}"/>
+    <javac2 destdir="${vibes_ethereum-build.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.vibes_ethereum-build}/javac">
+      <compilerarg line="${compiler.args.vibes_ethereum-build}"/>
+      <bootclasspath refid="vibes_ethereum-build.module.bootclasspath"/>
+      <classpath refid="vibes_ethereum-build.module.production.classpath"/>
+      <src refid="vibes_ethereum-build.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.vibes_ethereum-build"/>
+    </javac2>
+    
+    <copy todir="${vibes_ethereum-build.output.dir}">
+      <fileset dir="${module.vibes_ethereum-build.basedir}/project">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.vibes_ethereum-build.tests" depends="register.custom.compilers,compile.module.vibes_ethereum-build.production" description="compile module vibes_ethereum-build; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.vibes_ethereum-build" description="cleanup module">
+    <delete dir="${vibes_ethereum-build.output.dir}"/>
+    <delete dir="${vibes_ethereum-build.testoutput.dir}"/>
+  </target>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.vibes_ethereum, clean.module.vibes_ethereum-build" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.vibes_ethereum, compile.module.vibes_ethereum-build" description="build all modules"/>
+  
+  <target name="all" depends="build.modules" description="build all"/>
+</project>

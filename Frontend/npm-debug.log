@@ -14,7 +14,7 @@
 5 verbose stack     at ReadFileContext.callback (/usr/share/npm/node_modules/graceful-fs/graceful-fs.js:76:16)
 5 verbose stack     at FSReqWrap.readFileAfterOpen [as oncomplete] (fs.js:420:13)
 6 verbose cwd /home/aditya/Documents/Code/TUM/Thesis/vibes-eth/Frontend
-7 error Linux 4.15.0-34-generic
+7 error Linux 4.15.0-42-generic
 8 error argv "/usr/bin/node" "/usr/bin/npm" "start"
 9 error node v8.10.0
 10 error npm  v3.5.2

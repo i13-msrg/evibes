@@ -8,18 +8,6 @@ const columns = [{
   headerName: 'NAME',
   field: 'id'
 },{
-  headerName: 'NODE TYPE',
-  field: 'nodeType'
-},{
-  headerName: 'EVM STATE',
-  field: 'evmState'
-},{
-  headerName: 'POOL STATE',
-  field: 'poolState'
-},{
-  headerName: 'NODE STATE',
-  field: 'nodeState'
-},{
   headerName: 'PEERS',
   field: 'peers'
 },{
@@ -73,6 +61,18 @@ const columns = [{
 },{
   headerName: 'AVG. PROPOGATION TIME',
   field: 'avgPropTime'
+},{
+  headerName: 'NODE TYPE',
+  field: 'nodeType'
+},{
+  headerName: 'EVM STATE',
+  field: 'evmState'
+},{
+  headerName: 'POOL STATE',
+  field: 'poolState'
+},{
+  headerName: 'NODE STATE',
+  field: 'nodeState'
 }]
 
 

@@ -21,6 +21,8 @@ case class LocalStatsJson(clientId: String, blockNum : Int, timestamp : Long, bl
                            pendingTx : Double, avgPendingTx : Double, poolGasAcc : Double, propTime : Long, avgPropTime : Long)
 
 
+
+
 object Reducer {
   case class StatsUpdate(clientId: String, stats: Stats)
   case class NodeUpdate(clientId: String, stats: Stats, nodeAddr: String, peerRemoved: Boolean)
@@ -99,7 +101,7 @@ class Reducer(globalStream: SourceQueueWithComplete[StatsJson], localStream: Sou
   }
 
 
-  context.system.scheduler.schedule(10 second, 2 second, new Runnable {
+  context.system.scheduler.schedule(10 second, 5 second, new Runnable {
     override def run(): Unit = {
       //log.info("SENDING REDUCER DATA OVER THE STREAM")
       globalStream offer StatsJson(

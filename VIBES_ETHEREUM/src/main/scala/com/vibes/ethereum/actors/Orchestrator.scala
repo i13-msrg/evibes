@@ -43,10 +43,9 @@ class Orchestrator(eventQueue: SourceQueueWithComplete[EventJson], localStatsQue
   def startNodes(noOfNodes: Int, nodesMap: mutable.HashMap[String, ActorRef], reducer: ActorRef,
                  eventQueue: SourceQueueWithComplete[EventJson], setting: Setting.type,
                  bootNodeMap: mutable.HashMap[String, ActorRef]): (mutable.HashMap[String, ActorRef], ListBuffer[Account]) = {
-    log.info("IN STARTNODE")
     var accList = new ListBuffer[Account]
     for (i <- 0 until noOfNodes) {
-      log.info("Creationg Node " + i.toString())
+      log.info("Creating Node: " + i.toString())
       val nodetp = createNode("FULLNODE", reducer, eventQueue, setting)
       nodesMap.put(nodetp._1, nodetp._2)
       accList += nodetp._3

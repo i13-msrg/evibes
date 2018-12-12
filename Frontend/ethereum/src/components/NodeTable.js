@@ -14,15 +14,6 @@ const columns = [{
   Header: 'AvgLatency',
   accessor: 'avgPropTime'
 },{
-  Header: 'evmState',
-  accessor: 'evmState'
-},{
-  Header: 'poolState',
-  accessor: 'poolState'
-},{
-  Header: 'nodeState',
-  accessor: 'nodeState'
-},{
   Header: 'peers',
   accessor: 'peers'
 },{
@@ -73,6 +64,15 @@ const columns = [{
 },{
   Header: 'AvgGasLimit',
   accessor: 'avgGasLimit'
+},{
+  Header: 'evmState',
+  accessor: 'evmState'
+},{
+  Header: 'poolState',
+  accessor: 'poolState'
+},{
+  Header: 'nodeState',
+  accessor: 'nodeState'
 }]
 
 
