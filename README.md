@@ -6,4 +6,4 @@ Cryptocurrencies and Distributed Ledger technologies, such as Bitcoin, Ethereum 
 
 # Installation
 
-[Please follow the Appendix A.3 (Page 75) in the Master Thesis documentation](https://github.com/i13-msrg/evibes/blob/master/MasterThesis-AdityaShrikantDeshpande.pdf)
+[Please follow the Appendix A.3 (Page 75) in this documentation](https://github.com/i13-msrg/evibes/blob/master/MasterThesis-AdityaShrikantDeshpande.pdf)
