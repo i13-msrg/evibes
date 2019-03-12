@@ -4,6 +4,8 @@ Cryptocurrencies and Distributed Ledger technologies, such as Bitcoin, Ethereum 
   
 [eVIBES: Configurable and Interactive Ethereum Blockchain Simulation Framework](https://dl.acm.org/citation.cfm?id=3284020)
 
-# Installation
+# Installation & Documentation
 
-[Please follow the Appendix A.3 (Page 75) in this documentation](https://github.com/i13-msrg/evibes/blob/master/MasterThesis-AdityaShrikantDeshpande.pdf)
+[For Installation, Please follow the Appendix A.3 (Page 75) in this documentation.](https://github.com/i13-msrg/evibes/blob/master/MasterThesis-AdityaShrikantDeshpande.pdf)
+
+[For detailed documentation, please review this Master Thesis](https://github.com/i13-msrg/evibes/blob/master/MasterThesis-AdityaShrikantDeshpande.pdf)
